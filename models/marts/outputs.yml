@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: annual_aggregate
+    description: "An annually aggregated table of price ratios, of all sets, looking at the median prices."
+    config:
+      materialized: incremental
+      unique_key: year
+      incremental_strategy: merge
+    columns:
+      - name: year
+        data_type: integer
+        description: '{{ doc("year") }}'
+
+      - name: ppbm_us
+        data_type: double
+        description: '{{ doc("ppbm_us") }}'
+
+      - name: ppbm_gb
+        data_type: double
+        description: '{{ doc("ppbm_gb") }}'
+
+      - name: ppbm_eu
+        data_type: double
+        description: '{{ doc("ppbm_eu") }}'
+
+      - name: ppsp
+        data_type: double
+        description: '{{ doc("ppsp") }}'
+
+      - name: ppp
+        data_type: double
+        description: '{{ doc("ppp") }}'
+
+      - name: ppd
+        data_type: double
+        description: '{{ doc("ppd") }}'
+
+      - name: ppe
+        data_type: double
+        description: '{{ doc("ppe") }}'

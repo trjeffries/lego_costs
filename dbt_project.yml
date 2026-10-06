@@ -3,6 +3,7 @@ version: "1.0.0"
 
 profile: "lego_costs"
 
+docs-paths: ["docs"]
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -16,8 +17,6 @@ clean-targets: # directories to be removed by `dbt clean`
 
 models:
   lego_costs:
-    example:
-      +materialized: view
     intermediate:
       +materialized: view
     staging:

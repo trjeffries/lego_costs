@@ -1,0 +1,26 @@
+name: "lego_costs"
+version: "1.0.0"
+
+profile: "lego_costs"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets: # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+models:
+  lego_costs:
+    example:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

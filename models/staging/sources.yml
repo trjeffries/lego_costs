@@ -1,0 +1,12 @@
+version: 2
+sources:
+  - name: duckdb
+    description: Primary database of three tables
+    schema: main
+    tables:
+      - name: big_mac_adjusted
+        description: Prices of Big Macs in countries around the world.
+      - name: lego_sets
+        description: LEGO sets released since 2000.
+      - name: sp500_index
+        description: Value of the S&P 500 since its inception.

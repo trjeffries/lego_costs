@@ -18,12 +18,21 @@ app.layout = dbc.Container([
         html.Hr()
     ]),
     dbc.Row([
-        dcc.RadioItems(options=[
-                        {'label': 'US Big Macs', 'value': 'ppbm_us'},
-                        {'label': 'UK Big Macs', 'value': 'ppbm_gb'},
-                        {'label': 'EU Big Macs', 'value': 'ppbm_eu'}],
-                       inline=True,
-                       id='controls-and-radio-item'),
+        html.Div([
+            html.P([
+                "Choose from: ",
+                dcc.RadioItems(
+                            options=[
+                                {'label': 'US Big Macs', 'value': 'ppbm_us'},
+                                {'label': 'UK Big Macs', 'value': 'ppbm_gb'},
+                                {'label': 'EU Big Macs', 'value': 'ppbm_eu'}],
+                            inline=True,
+                            id='controls-and-radio-item',
+                            value='ppbm_us',
+                            className="ms-1 me-1")
+                ],
+                className="d-flex align-items-center"),
+        ])
     ]),
     dbc.Row([
         dbc.Col([

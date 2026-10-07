@@ -13,7 +13,10 @@ SELECT
         CONCAT(year,'-01-01')::DATE)
         AS released,
     packaging,
-    availability,
+    CASE
+        WHEN CONTAINS(availability, 'exclusive') THEN 'LEGO exclusive'
+        ELSE availability
+        END AS availability,
     "uk retail price" AS retail_gbp,
     "us retail price" AS retail_usd,
     "de retail price" AS retail_eur,

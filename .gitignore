@@ -1,7 +1,6 @@
-/dbt_packages/
-/target/
 dbt_project/target/
 dbt_project/dbt_packages/
 dbt_project/logs/
 dbt_project/.env
 dbt_project/dbt_internal_packages/
+logs/

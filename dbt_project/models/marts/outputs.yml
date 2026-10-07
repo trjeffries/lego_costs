@@ -39,3 +39,88 @@ models:
       - name: ppe
         data_type: double
         description: '{{ doc("ppe") }}'
+
+  - name: full_output
+    description: "A complete output table of LEGO set details and price ratios."
+    config:
+      materialized: incremental
+      unique_key: set_number
+      incremental_strategy: merge
+    columns:
+      - name: set_name
+        description: '{{ doc("set_name") }}'
+
+      - name: set_number
+        description: '{{ doc("set_number") }}'
+
+      - name: pieces
+        description: '{{ doc("pieces") }}'
+
+      - name: minifigs
+        description: '{{ doc("minifigs") }}'
+
+      - name: age
+        description: '{{ doc("age") }}'
+
+      - name: theme_l1
+        description: '{{ doc("theme_l1") }}'
+
+      - name: theme_l2
+        description: '{{ doc("theme_l2") }}'
+
+      - name: theme_l3
+        description: '{{ doc("theme_l3") }}'
+
+      - name: brickset
+        description: '{{ doc("brickset") }}'
+
+      - name: released
+        description: '{{ doc("released") }}'
+
+      - name: year_released
+        description: '{{ doc("year") }}'
+
+      - name: month_released
+        description: '{{ doc("month_released") }}'
+
+      - name: availability
+        description: '{{ doc("availability") }}'
+
+      - name: retail_gbp
+        description: '{{ doc("retail_gbp") }}'
+
+      - name: retail_usd
+        description: '{{ doc("retail_usd") }}'
+
+      - name: retail_eur
+        description: '{{ doc("retail_eur") }}'
+
+      - name: bmc_gb
+        description: '{{ doc("bmc_gb") }}'
+
+      - name: bmc_us
+        description: '{{ doc("bmc_us") }}'
+
+      - name: bmc_eu
+        description: '{{ doc("bmc_eu") }}'
+
+      - name: ppbm_us
+        description: '{{ doc("ppbm_us") }}'
+
+      - name: ppbm_gb
+        description: '{{ doc("ppbm_gb") }}'
+
+      - name: ppbm_eu
+        description: '{{ doc("ppbm_eu") }}'
+
+      - name: ppsp
+        description: '{{ doc("ppsp") }}'
+
+      - name: ppp
+        description: '{{ doc("ppp") }}'
+
+      - name: ppd
+        description: '{{ doc("ppd") }}'
+
+      - name: ppe
+        description: '{{ doc("ppe") }}'

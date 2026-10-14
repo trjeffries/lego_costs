@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 
-db_path = Path(__file__).resolve().parent.parent / "dbt_project" / "dev.duckdb"
+db_path = Path(__file__).resolve().parent / "assets" / "dev.duckdb"
 con = duckdb.connect(str(db_path), read_only=True)
 annual = con.sql("SELECT * FROM annual_aggregate").df()
 all = con.sql("SELECT * FROM full_output").df()

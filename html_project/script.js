@@ -316,7 +316,7 @@ function drawThemeScatter(data) {
                 style: "currency",
                 currency: "GBP",
               }).format(point.x);
-              return `${point.theme}: ${point.setCount.toLocaleString()} sets, median ${price}, ${point.y.toLocaleString()} pieces`;
+              return `Theme Group: ${point.theme}, ${point.setCount.toLocaleString()} sets, median ${price}, ${point.y.toLocaleString()} pieces`;
             },
           },
         },
@@ -416,7 +416,7 @@ function drawSubThemeScatter(data, parentTheme) {
 
   document.getElementById(
     "sub-theme-chart-heading",
-  ).textContent = `Typical Set Size and UK Price by Sub-Theme: ${parentTheme}`;
+  ).textContent = `Typical Set Size and UK Price by Theme: ${parentTheme}`;
   chartContainer.style.height = `${Math.max(440, datasets.length * 24)}px`;
   section.hidden = false;
   selectedThemeForSubTheme = parentTheme;
@@ -457,7 +457,7 @@ function drawSubThemeScatter(data, parentTheme) {
                 style: "currency",
                 currency: "GBP",
               }).format(point.x);
-              return `${point.subTheme}: ${point.setCount.toLocaleString()} sets, median ${price}, ${point.y.toLocaleString()} pieces`;
+              return `Theme: ${point.subTheme}, ${point.setCount.toLocaleString()} sets, median ${price}, ${point.y.toLocaleString()} pieces`;
             },
           },
         },
@@ -496,17 +496,153 @@ function renderScatterFilteredTable(data) {
   const selection = [selectedThemeForTable, selectedSubThemeForTable]
     .filter(Boolean)
     .join(" / ");
-  heading.textContent = selection ? `Raw Data — ${selection}` : "Raw Data";
+  heading.textContent = selection
+    ? `Raw Data — Theme Group: ${selectedThemeForTable}${
+        selectedSubThemeForTable ? ` / Theme: ${selectedSubThemeForTable}` : ""
+      }`
+    : "Raw Data";
   document.getElementById("clear-scatter-selection").hidden = !selection;
-  populateDataTable(filteredData);
+  populateDataTable(filteredData, {
+    hideThemeGroup: Boolean(selectedThemeForTable),
+    hideTheme: Boolean(selectedSubThemeForTable),
+  });
 }
 
-function populateDataTable(data) {
+function formatCurrency(value, currency) {
+  if (value == null || value === "") {
+    return "—";
+  }
+
+  const formattedValue = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency,
+  }).format(value);
+  return currency === "USD" ? formattedValue.replace("US$", "$") : formattedValue;
+}
+
+function measureColumnWidth(tableElement, texts) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const tableStyle = getComputedStyle(tableElement);
+  context.font = tableStyle.font;
+
+  const widestText = Math.max(
+    ...texts.map((text) => context.measureText(String(text ?? "")).width),
+  );
+  return `${Math.ceil(widestText + 24)}px`;
+}
+
+function populateDataTable(data, { hideThemeGroup, hideTheme }) {
   const tableElement = $("#data-table");
+  const table = tableElement[0];
+  const headers = [
+    "Set Number",
+    "Set Name",
+    "Theme Group",
+    "Theme",
+    "Sub-Theme",
+    "Pieces",
+    "UK Cost",
+    "US Cost",
+    "EU Cost",
+  ];
+  const shortColumnWidths = new Map([
+    [0, measureColumnWidth(table, [headers[0]])],
+    [5, measureColumnWidth(table, [headers[5]])],
+    [6, measureColumnWidth(table, [headers[6]])],
+    [7, measureColumnWidth(table, [headers[7]])],
+    [8, measureColumnWidth(table, [headers[8]])],
+  ]);
+  let themeGroupWidth = measureColumnWidth(table, [
+    headers[2],
+    ...data.map((item) => item.theme_l1),
+  ]);
+  let themeWidth = measureColumnWidth(table, [
+    headers[3],
+    ...data.map((item) => item.theme_l2),
+  ]);
+  let subThemeWidth = measureColumnWidth(table, [
+    headers[4],
+    ...data.map((item) => item.theme_l3),
+  ]);
+  const maxThemeColumnWidth = 160;
+  themeGroupWidth = `${Math.min(
+    parseFloat(themeGroupWidth),
+    maxThemeColumnWidth,
+  )}px`;
+  themeWidth = `${Math.min(parseFloat(themeWidth), maxThemeColumnWidth)}px`;
+  subThemeWidth = `${Math.min(
+    parseFloat(subThemeWidth),
+    maxThemeColumnWidth,
+  )}px`;
+  const tableContainerWidth = table.closest("#raw-data").clientWidth;
+  const compactColumnWidth = [...shortColumnWidths.values()].reduce(
+    (total, width) => total + parseFloat(width),
+    0,
+  );
+  const availableThemeColumnWidth = Math.max(
+    0,
+    tableContainerWidth - compactColumnWidth - 240 - 8,
+  );
+  const visibleThemeColumnWidths = [
+    ...(hideThemeGroup ? [] : [themeGroupWidth]),
+    ...(hideTheme ? [] : [themeWidth]),
+    subThemeWidth,
+  ];
+  const visibleThemeColumnWidth = visibleThemeColumnWidths.reduce(
+    (total, width) => total + parseFloat(width),
+    0,
+  );
+  if (visibleThemeColumnWidth > availableThemeColumnWidth) {
+    const widthScale = availableThemeColumnWidth / visibleThemeColumnWidth;
+    themeGroupWidth = `${Math.floor(parseFloat(themeGroupWidth) * widthScale)}px`;
+    themeWidth = `${Math.floor(parseFloat(themeWidth) * widthScale)}px`;
+    subThemeWidth = `${Math.floor(parseFloat(subThemeWidth) * widthScale)}px`;
+  }
+  const fixedColumnWidths = [
+    ...shortColumnWidths.values(),
+    subThemeWidth,
+    ...(hideThemeGroup ? [] : [themeGroupWidth]),
+    ...(hideTheme ? [] : [themeWidth]),
+  ];
+  const setNameWidth = `${Math.max(
+    240,
+    tableContainerWidth -
+      fixedColumnWidths.reduce((total, width) => total + parseFloat(width), 0) -
+      2,
+  )}px`;
+  const columnWidths = [
+    shortColumnWidths.get(0),
+    setNameWidth,
+    themeGroupWidth,
+    themeWidth,
+    subThemeWidth,
+    shortColumnWidths.get(5),
+    shortColumnWidths.get(6),
+    shortColumnWidths.get(7),
+    shortColumnWidths.get(8),
+  ];
 
   if ($.fn.DataTable.isDataTable(tableElement)) {
     tableElement.DataTable().clear().destroy();
   }
+
+  table.style.removeProperty("width");
+  table.style.removeProperty("table-layout");
+  table.querySelectorAll("thead th").forEach((header) => {
+    header.removeAttribute("style");
+  });
+  table.querySelectorAll("colgroup").forEach((colgroup) => colgroup.remove());
+  const colgroup = document.createElement("colgroup");
+  columnWidths.forEach((width, index) => {
+    const column = document.createElement("col");
+    column.style.width = width;
+    if ((index === 2 && hideThemeGroup) || (index === 3 && hideTheme)) {
+      column.style.display = "none";
+    }
+    colgroup.appendChild(column);
+  });
+  table.insertBefore(colgroup, table.firstChild);
 
   tableElement.DataTable({
     data: data.map((item) => [
@@ -514,29 +650,95 @@ function populateDataTable(data) {
       item.set_name,
       item.theme_l1,
       item.theme_l2,
+      item.theme_l3 || "—",
       item.pieces,
-      item.retail_gbp == null
-        ? "—"
-        : new Intl.NumberFormat("en-GB", {
-            style: "currency",
-            currency: "GBP",
-          }).format(item.retail_gbp),
+      formatCurrency(item.retail_gbp, "GBP"),
+      formatCurrency(item.retail_usd, "USD"),
+      formatCurrency(item.retail_eur, "EUR"),
     ]),
     columns: [
-      { title: "Set Number" },
-      { title: "Set Name" },
-      { title: "Theme" },
-      { title: "Sub-theme" },
-      { title: "Pieces" },
-      { title: "UK Cost" },
+      {
+        title: headers[0],
+        width: columnWidths[0],
+        className: "raw-data-compact",
+      },
+      {
+        title: headers[1],
+        width: columnWidths[1],
+        className: "raw-data-set-name",
+      },
+      {
+        title: headers[2],
+        width: columnWidths[2],
+        className: "raw-data-theme",
+        visible: !hideThemeGroup,
+      },
+      {
+        title: headers[3],
+        width: columnWidths[3],
+        className: "raw-data-theme",
+        visible: !hideTheme,
+      },
+      {
+        title: headers[4],
+        width: columnWidths[4],
+        className: "raw-data-theme",
+      },
+      {
+        title: headers[5],
+        width: columnWidths[5],
+        className: "raw-data-compact",
+      },
+      {
+        title: headers[6],
+        width: columnWidths[6],
+        className: "raw-data-compact",
+      },
+      {
+        title: headers[7],
+        width: columnWidths[7],
+        className: "raw-data-compact",
+      },
+      {
+        title: headers[8],
+        width: columnWidths[8],
+        className: "raw-data-compact",
+      },
     ],
+    autoWidth: false,
+    scrollX: true,
+    order: [],
   });
+
+  const tableWidth = columnWidths.reduce((total, width, index) => {
+    if ((index === 2 && hideThemeGroup) || (index === 3 && hideTheme)) {
+      return total;
+    }
+    return total + parseFloat(width);
+  }, 0);
+  const tableWrapper = table.closest(".dataTables_wrapper");
+  const headerTable = tableWrapper.querySelector(".dataTables_scrollHead table");
+  const headerColgroup = colgroup.cloneNode(true);
+  headerTable.querySelectorAll("colgroup").forEach((existingColgroup) => {
+    existingColgroup.remove();
+  });
+  headerTable.insertBefore(headerColgroup, headerTable.firstChild);
+  tableWrapper
+    .querySelectorAll(".dataTables_scrollHead table, .dataTables_scrollBody table")
+    .forEach((scrollTable) => {
+      scrollTable.style.setProperty("width", `${tableWidth}px`, "important");
+      scrollTable.style.setProperty("table-layout", "fixed", "important");
+    });
+  tableWrapper.querySelector(".dataTables_scrollHeadInner").style.width =
+    `${tableWidth}px`;
 }
 
 function populateCategoryFilter(data) {
   const categoryFilter = document.getElementById("category-filter");
   categoryFilter.innerHTML = "";
-  categoryFilter.appendChild(new Option("All Themes", "all", true, true));
+  categoryFilter.appendChild(
+    new Option("All Theme Groups", "all", true, true),
+  );
 
   const themes = [
     ...new Set(data.map((item) => item.theme_l1).filter((theme) => theme)),
@@ -563,7 +765,7 @@ function populateSubThemeFilter(data) {
 
   subThemeFilter.innerHTML = "";
   subThemeFilter.appendChild(
-    new Option("All Sub-Themes", "all", true, true),
+    new Option("All Themes", "all", true, true),
   );
   subThemes.forEach((subTheme) => {
     subThemeFilter.appendChild(new Option(subTheme, subTheme));

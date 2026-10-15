@@ -129,6 +129,7 @@ function drawChart(data, elementId, metric) {
   }
 
   const releases = new Map();
+  const yearlyValues = new Map();
   data.forEach((item) => {
     const rawValue = item[metric];
     if (rawValue === null || rawValue === undefined || rawValue === "") {
@@ -144,24 +145,53 @@ function drawChart(data, elementId, metric) {
     release.total += value;
     release.count += 1;
     releases.set(item.released, release);
+
+    const year = item.released.slice(0, 4);
+    const yearValues = yearlyValues.get(year) || [];
+    yearValues.push(value);
+    yearlyValues.set(year, yearValues);
   });
 
-  const dates = [...releases.keys()].sort();
+  const annualMedian = (values) => {
+    const sortedValues = values.sort((a, b) => a - b);
+    const middle = Math.floor(sortedValues.length / 2);
+    return sortedValues.length % 2
+      ? sortedValues[middle]
+      : (sortedValues[middle - 1] + sortedValues[middle]) / 2;
+  };
+  const yearlyMedians = new Map(
+    [...yearlyValues].map(([year, values]) => [
+      `${year}-01-01`,
+      annualMedian(values),
+    ]),
+  );
+  const dates = [...new Set([...releases.keys(), ...yearlyMedians.keys()])].sort();
+
   chartInstance = new Chart(ctx, {
     type: "line",
     data: {
       labels: dates,
       datasets: [
         {
-          label: pricePerMetrics[metric],
+          label: `${pricePerMetrics[metric]} by release date`,
           data: dates.map((date) => {
             const release = releases.get(date);
-            return release.total / release.count;
+            return release ? release.total / release.count : null;
           }),
+          fill: false,
+          borderColor: "rgba(75, 135, 192, 0.3)",
+          backgroundColor: "rgba(75, 135, 192, 0.1)",
+          tension: 0.1,
+          spanGaps: false,
+        },
+        {
+          label: `${pricePerMetrics[metric]} annual median`,
+          data: dates.map((date) => yearlyMedians.get(date) ?? null),
           fill: false,
           borderColor: "rgb(75, 135, 192)",
           backgroundColor: "rgba(75, 135, 192, 0.2)",
           tension: 0.1,
+          spanGaps: true,
         },
       ],
     },

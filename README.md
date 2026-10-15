@@ -6,7 +6,7 @@ Good question! It's a project I set up, based on a question I've been wondering 
 
 ### dbt_project
 
-A dbt core setup, to work on SQL and dbt skills. Combines multiple CSV sources, and outputs to one individual file which I'm then using to create charts and tables to show online. Previously used DuckDB, nows uses SQLite, for reasons that will become clear.
+A dbt core setup, to work on SQL and dbt skills. It combines multiple CSV sources and writes its output tables to `dbt_project/dev.duckdb`. The Python export script below converts those tables to JSON for the static HTML dashboard.
 
 ### python_project
 
@@ -16,4 +16,6 @@ A small detour I took into building a web app, due to having no knowlege of Pyth
 
 ### html_project
 
-It struck me that actually, most charts online don't use Python at all, and that actually I don't want to rely on a third-party to host everything I do (he writes, on a website hosted by GitHub). So, I decided to throw that off for now and rebuild (and, in due course, complete) the project using plain old HTML, CSS and JavaScript. Never built a website before, this could be fun.
+It struck me that actually, most charts online don't use Python at all, and that actually I don't want to rely on a third-party to host everything I do (he writes, on a website hosted by GitHub). So, I decided to throw that off for now and rebuild (and, in due course, complete) the project using HTML, CSS and JavaScript. Never built a website before, this could be fun.
+
+The HTML dashboard reads static JSON files from `html_project/assets`. After rebuilding the dbt tables, refresh those files by running `python3 html_project/data_convertor/export_dbt_json.py` (requires the `duckdb` Python package). To preview the site locally without Node.js, run `python3 -m http.server 8000` from the repository root and open `http://localhost:8000/html_project/`.

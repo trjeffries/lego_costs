@@ -11,7 +11,7 @@ const pricePerMetrics = {
 };
 
 document.addEventListener("DOMContentLoaded", function () {
-  fetch("/data")
+  fetch("assets/full_output.json")
     .then((response) => {
       if (!response.ok) {
         throw new Error(`Data request failed with status ${response.status}`);
@@ -33,12 +33,15 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch((error) => {
       console.error("Error fetching data:", error);
       document.getElementById("data-status").textContent =
-        "Failed to load LEGO set data. Check the server and database.";
+        "Failed to load LEGO set data. Run the Python export script and check that the page is being served over HTTP.";
     });
 });
 
 function setupFilters(data) {
-  const dates = data.map((item) => item.released).filter(Boolean).sort();
+  const dates = data
+    .map((item) => item.released)
+    .filter(Boolean)
+    .sort();
 
   flatpickr("#start-date", {
     defaultDate: dates[0],
@@ -76,7 +79,7 @@ function filterAndRenderData(data) {
       (item) =>
         item.released >= startDate &&
         item.released <= endDate &&
-        (selectedTheme === "all" || item.theme === selectedTheme),
+        (selectedTheme === "all" || item.theme_l1 === selectedTheme),
     )
     .sort(
       (a, b) =>
@@ -112,8 +115,10 @@ function updateKeyMetrics(data) {
     data.length.toLocaleString();
   document.getElementById("average-pieces-per-us-big-mac").textContent =
     averageFor(data, "ppbm_us").toFixed(1);
-  document.getElementById("average-pieces-per-pound").textContent =
-    averageFor(data, "ppp").toFixed(1);
+  document.getElementById("average-pieces-per-pound").textContent = averageFor(
+    data,
+    "ppp",
+  ).toFixed(1);
 }
 
 function drawChart(data, elementId, metric) {
@@ -185,15 +190,15 @@ function populateDataTable(data) {
     data: data.map((item) => [
       item.set_number,
       item.set_name,
-      item.theme,
-      item.sub_theme,
+      item.theme_l1,
+      item.theme_l2,
       item.pieces,
-      item.uk_cost == null
+      item.retail_gbp == null
         ? "—"
         : new Intl.NumberFormat("en-GB", {
             style: "currency",
             currency: "GBP",
-          }).format(item.uk_cost),
+          }).format(item.retail_gbp),
     ]),
     columns: [
       { title: "Set Number" },
@@ -212,7 +217,7 @@ function populateCategoryFilter(data) {
   categoryFilter.appendChild(new Option("All Themes", "all", true, true));
 
   const themes = [
-    ...new Set(data.map((item) => item.theme).filter((theme) => theme)),
+    ...new Set(data.map((item) => item.theme_l1).filter((theme) => theme)),
   ].sort((a, b) => a.localeCompare(b));
   themes.forEach((theme) => {
     categoryFilter.appendChild(new Option(theme, theme));

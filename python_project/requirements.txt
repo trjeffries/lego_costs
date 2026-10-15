@@ -1,0 +1,6 @@
+duckdb
+pathlib
+dash
+dash_ag_grid
+dash_bootstrap_components
+plotly

@@ -37,8 +37,14 @@ h1 {
   font-weight: bold;
 }
 
-#chart-canvas {
+#chart-canvas,
+#theme-scatter-canvas {
   max-height: 440px;
+}
+
+#sub-theme-chart-container {
+  position: relative;
+  width: 100%;
 }
 
 /* Fix for DataTables Pagination Spacing */

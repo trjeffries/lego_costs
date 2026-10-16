@@ -1,9 +1,3 @@
-let chartInstance = null;
-let themeScatterInstance = null;
-let subThemeScatterInstance = null;
-let selectedThemeForSubTheme = null;
-let selectedThemeForTable = null;
-let selectedSubThemeForTable = null;
 const chartColor = "rgb(75, 135, 192)";
 const themeColors = [
   "#4e79a7",
@@ -23,7 +17,6 @@ const themeColors = [
   "#d4a6c8",
   "#79706e",
 ];
-
 const pricePerMetrics = {
   ppbm_us: "Pieces per Big Mac (US)",
   ppbm_gb: "Pieces per Big Mac (UK)",
@@ -33,98 +26,172 @@ const pricePerMetrics = {
   ppd: "Pieces per Dollar",
   ppe: "Pieces per Euro",
 };
+const rawColumns = [
+  { key: "set_number", title: "Set Number", className: "raw-data-compact" },
+  { key: "set_name", title: "Set Name", className: "raw-data-set-name" },
+  { key: "theme_l1", title: "Theme Group", className: "raw-data-theme" },
+  { key: "theme_l2", title: "Theme", className: "raw-data-theme" },
+  {
+    key: "theme_l3",
+    title: "Sub-Theme",
+    className: "raw-data-theme",
+    format: (value) => value || "—",
+  },
+  { key: "pieces", title: "Pieces", className: "raw-data-compact" },
+  {
+    key: "retail_gbp",
+    title: "UK Cost",
+    className: "raw-data-compact",
+    currency: "GBP",
+  },
+  {
+    key: "retail_usd",
+    title: "US Cost",
+    className: "raw-data-compact",
+    currency: "USD",
+  },
+  {
+    key: "retail_eur",
+    title: "EU Cost",
+    className: "raw-data-compact",
+    currency: "EUR",
+  },
+];
 
-document.addEventListener("DOMContentLoaded", function () {
-  fetch("assets/full_output.json")
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Data request failed with status ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (!data || data.length === 0) {
-        document.getElementById("data-status").textContent =
-          "No LEGO set data is available.";
-        return;
-      }
+let allSetData = [];
+let tableRows = [];
+let selectedThemeForSubTheme = null;
+let selectedThemeForTable = null;
+let selectedSubThemeForTable = null;
+let tablePage = 0;
+let tableSort = { key: "released", direction: "asc" };
+let resizeTimer = null;
 
-      initializeDashboard(data);
-      document
-        .getElementById("close-sub-theme-chart")
-        .addEventListener("click", () => closeSubThemeChart(data));
-      document
-        .getElementById("clear-scatter-selection")
-        .addEventListener("click", () => {
-          selectedThemeForTable = null;
-          closeSubThemeChart(data);
-        });
-      document.getElementById("chart-type-selector").onchange = () =>
-        filterAndRenderData(data);
-      document.getElementById("category-filter").onchange = () => {
-        populateSubThemeFilter(data);
-        filterAndRenderData(data);
-      };
-      document.getElementById("sub-theme-filter").onchange = () =>
-        filterAndRenderData(data);
-    })
-    .catch((error) => {
-      console.error("Error fetching data:", error);
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const response = await fetch("assets/full_output.json");
+    if (!response.ok) {
+      throw new Error(`Data request failed with status ${response.status}`);
+    }
+    allSetData = await response.json();
+    if (!Array.isArray(allSetData) || allSetData.length === 0) {
       document.getElementById("data-status").textContent =
-        "Failed to load LEGO set data. Run the Python export script and check that the page is being served over HTTP.";
-    });
+        "No LEGO set data is available.";
+      return;
+    }
+    initializeDashboard();
+  } catch (error) {
+    console.error("Error loading LEGO set data:", error);
+    document.getElementById("data-status").textContent =
+      "Failed to load LEGO set data. Run the Python export script and check that the page is being served over HTTP.";
+  }
 });
 
-function initializeDashboard(data) {
-  populateCategoryFilter(data);
-  populateSubThemeFilter(data);
-  filterAndRenderData(data);
-  drawThemeScatter(data);
-  renderScatterFilteredTable(data);
+function initializeDashboard() {
+  populateCategoryFilter();
+  populateSubThemeFilter();
+  document
+    .getElementById("chart-type-selector")
+    .addEventListener("change", updateFilteredDashboard);
+  document.getElementById("category-filter").addEventListener("change", () => {
+    populateSubThemeFilter();
+    updateFilteredDashboard();
+  });
+  document
+    .getElementById("sub-theme-filter")
+    .addEventListener("change", updateFilteredDashboard);
+  document
+    .getElementById("close-sub-theme-chart")
+    .addEventListener("click", closeSubThemeChart);
+  document
+    .getElementById("clear-scatter-selection")
+    .addEventListener("click", () => {
+      selectedThemeForTable = null;
+      closeSubThemeChart();
+    });
+  document.getElementById("table-page-size").addEventListener("change", () => {
+    tablePage = 0;
+    renderRawTable();
+  });
+  document.getElementById("table-search").addEventListener("input", () => {
+    tablePage = 0;
+    renderRawTable();
+  });
+  document.getElementById("table-previous").addEventListener("click", () => {
+    tablePage = Math.max(0, tablePage - 1);
+    renderRawTable();
+  });
+  document.getElementById("table-next").addEventListener("click", () => {
+    tablePage += 1;
+    renderRawTable();
+  });
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(redrawCharts, 100);
+  });
+  updateFilteredDashboard();
+  drawThemeScatter();
+  renderScatterFilteredTable();
 }
 
-function filterAndRenderData(data) {
-  const chartType = document.getElementById("chart-type-selector").value;
-  const selectedTheme = document.getElementById("category-filter").value;
-  const selectedSubTheme = document.getElementById("sub-theme-filter").value;
+function populateCategoryFilter() {
+  const select = document.getElementById("category-filter");
+  const groups = [
+    ...new Set(allSetData.map((item) => item.theme_l1).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b));
+  select.replaceChildren(new Option("All Theme Groups", "all"));
+  groups.forEach((themeGroup) =>
+    select.add(new Option(themeGroup, themeGroup)),
+  );
+}
 
-  const filteredData = data
+function populateSubThemeFilter() {
+  const themeGroup = document.getElementById("category-filter").value;
+  const select = document.getElementById("sub-theme-filter");
+  const themes = [
+    ...new Set(
+      allSetData
+        .filter((item) => themeGroup === "all" || item.theme_l1 === themeGroup)
+        .map((item) => item.theme_l2)
+        .filter(Boolean),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+  const currentValue = select.value;
+  select.replaceChildren(new Option("All Themes", "all"));
+  themes.forEach((theme) => select.add(new Option(theme, theme)));
+  select.value = themes.includes(currentValue) ? currentValue : "all";
+}
+
+function getDropdownFilteredData() {
+  const themeGroup = document.getElementById("category-filter").value;
+  const theme = document.getElementById("sub-theme-filter").value;
+  return allSetData
     .filter(
       (item) =>
-        (selectedTheme === "all" || item.theme_l1 === selectedTheme) &&
-        (selectedSubTheme === "all" || item.theme_l2 === selectedSubTheme),
+        (themeGroup === "all" || item.theme_l1 === themeGroup) &&
+        (theme === "all" || item.theme_l2 === theme),
     )
     .sort(
       (a, b) =>
         a.released.localeCompare(b.released) ||
         a.set_number.localeCompare(b.set_number),
     );
-
-  updateKeyMetrics(filteredData);
-  drawChart(filteredData, "chart-canvas", chartType);
-}
-
-function median(values) {
-  const sortedValues = values.sort((a, b) => a - b);
-  const middle = Math.floor(sortedValues.length / 2);
-  return sortedValues.length % 2
-    ? sortedValues[middle]
-    : (sortedValues[middle - 1] + sortedValues[middle]) / 2;
 }
 
 function averageFor(data, field) {
   const values = data
-    .map((item) => item[field])
-    .filter((value) => value !== null && value !== undefined && value !== "")
-    .map(Number)
-    .filter(Number.isFinite);
-
+    .map((item) => Number(item[field]))
+    .filter((value, index) => {
+      const raw = data[index][field];
+      return raw !== null && raw !== "" && Number.isFinite(value);
+    });
   return values.length
-    ? values.reduce((total, value) => total + value, 0) / values.length
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
     : 0;
 }
 
-function updateKeyMetrics(data) {
+function updateFilteredDashboard() {
+  const data = getDropdownFilteredData();
   document.getElementById("sets-released").textContent =
     data.length.toLocaleString();
   document.getElementById("average-pieces-per-us-big-mac").textContent =
@@ -133,356 +200,415 @@ function updateKeyMetrics(data) {
     data,
     "ppp",
   ).toFixed(1);
+  drawLineChart(data, document.getElementById("chart-type-selector").value);
 }
 
-function drawChart(data, elementId, metric) {
-  const ctx = document.getElementById(elementId).getContext("2d");
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
 
-  if (chartInstance) {
-    chartInstance.destroy();
-  }
+function numericValues(data, field) {
+  return data
+    .map((item) => Number(item[field]))
+    .filter((value, index) => {
+      const raw = data[index][field];
+      return raw !== null && raw !== "" && Number.isFinite(value);
+    });
+}
 
-  const releases = new Map();
-  const yearlyValues = new Map();
-  data.forEach((item) => {
-    const rawValue = item[metric];
-    if (rawValue === null || rawValue === undefined || rawValue === "") {
-      return;
-    }
-
-    const value = Number(rawValue);
-    if (!Number.isFinite(value)) {
-      return;
-    }
-
-    const release = releases.get(item.released) || { total: 0, count: 0 };
-    release.total += value;
-    release.count += 1;
-    releases.set(item.released, release);
-
-    const year = item.released.slice(0, 4);
-    const yearValues = yearlyValues.get(year) || [];
-    yearValues.push(value);
-    yearlyValues.set(year, yearValues);
-  });
-
-  const yearlyMedians = new Map(
-    [...yearlyValues].map(([year, values]) => [
-      `${year}-01-01`,
-      median(values),
-    ]),
+function drawLineChart(data, metric) {
+  const container = d3.select("#line-chart");
+  const width = container.node().clientWidth;
+  const height = 440;
+  const margin = { top: 25, right: 24, bottom: 70, left: 82 };
+  const innerWidth = Math.max(1, width - margin.left - margin.right);
+  const innerHeight = height - margin.top - margin.bottom;
+  const releases = d3.rollups(
+    data.filter(
+      (item) =>
+        Number.isFinite(Number(item[metric])) &&
+        item[metric] !== null &&
+        item[metric] !== "",
+    ),
+    (items) => d3.mean(items, (item) => Number(item[metric])),
+    (item) => item.released,
   );
-  const dates = [
-    ...new Set([...releases.keys(), ...yearlyMedians.keys()]),
-  ].sort();
+  const releaseData = releases
+    .map(([date, value]) => ({ date: parseDate(date), value }))
+    .filter((item) => item.date && Number.isFinite(item.value))
+    .sort((a, b) => a.date - b.date);
+  const annualValues = d3.group(
+    data.filter(
+      (item) =>
+        Number.isFinite(Number(item[metric])) &&
+        item[metric] !== null &&
+        item[metric] !== "",
+    ),
+    (item) => item.released.slice(0, 4),
+  );
+  const annualData = [...annualValues]
+    .map(([year, items]) => ({
+      date: new Date(Number(year), 0, 1),
+      value: median(items.map((item) => Number(item[metric]))),
+    }))
+    .sort((a, b) => a.date - b.date);
+  const dates = [...releaseData, ...annualData].map((item) => item.date);
+  const x = d3
+    .scaleTime()
+    .domain(d3.extent(dates.length ? dates : [new Date(2000, 0, 1)]))
+    .range([0, innerWidth]);
+  const maxValue =
+    d3.max([...releaseData, ...annualData], (item) => item.value) || 1;
+  const y = d3
+    .scaleLinear()
+    .domain([0, maxValue * 1.05])
+    .nice()
+    .range([innerHeight, 0]);
+  const svg = container
+    .html("")
+    .append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-label", `${pricePerMetrics[metric]} over release date`);
+  const plot = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+  plot
+    .append("g")
+    .attr("class", "grid")
+    .call(d3.axisLeft(y).ticks(6).tickSize(-innerWidth).tickFormat(""));
+  plot
+    .append("g")
+    .attr("class", "axis")
+    .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("~s")));
+  plot
+    .append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(
+      d3
+        .axisBottom(x)
+        .ticks(Math.max(2, Math.floor(innerWidth / 100)))
+        .tickFormat(d3.timeFormat("%Y")),
+    );
+  plot
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("text-anchor", "middle")
+    .attr("x", innerWidth / 2)
+    .attr("y", innerHeight + 52)
+    .text("Release date");
+  plot
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -innerHeight / 2)
+    .attr("y", -60)
+    .text(pricePerMetrics[metric]);
 
-  chartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: dates,
-      datasets: [
-        {
-          label: `${pricePerMetrics[metric]} by release date`,
-          data: dates.map((date) => {
-            const release = releases.get(date);
-            return release ? release.total / release.count : null;
-          }),
-          fill: false,
-          borderColor: "rgba(75, 135, 192, 0.3)",
-          backgroundColor: "rgba(75, 135, 192, 0.1)",
-          tension: 0.1,
-          spanGaps: false,
-        },
-        {
-          label: `${pricePerMetrics[metric]} annual median`,
-          data: dates.map((date) => yearlyMedians.get(date) ?? null),
-          fill: false,
-          borderColor: chartColor,
-          backgroundColor: "rgba(75, 135, 192, 0.2)",
-          tension: 0.1,
-          spanGaps: true,
-        },
-      ],
+  const line = d3
+    .line()
+    .x((item) => x(item.date))
+    .y((item) => y(item.value));
+  plot
+    .append("path")
+    .datum(releaseData)
+    .attr("class", "line-release")
+    .attr("d", line);
+  plot
+    .append("path")
+    .datum(annualData)
+    .attr("class", "line-annual")
+    .attr("d", line);
+  plot
+    .selectAll(".release-point")
+    .data(releaseData)
+    .join("circle")
+    .attr("class", "release-point")
+    .attr("cx", (item) => x(item.date))
+    .attr("cy", (item) => y(item.value))
+    .attr("r", 2.5)
+    .attr("fill", "rgba(75, 135, 192, 0.45)")
+    .on("mouseenter", (event, item) =>
+      showTooltip(
+        event,
+        `${d3.timeFormat("%Y-%m-%d")(item.date)}: ${item.value.toLocaleString()}`,
+      ),
+    )
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+  plot
+    .selectAll(".annual-point")
+    .data(annualData)
+    .join("circle")
+    .attr("class", "annual-point")
+    .attr("cx", (item) => x(item.date))
+    .attr("cy", (item) => y(item.value))
+    .attr("r", 4)
+    .attr("fill", chartColor)
+    .on("mouseenter", (event, item) =>
+      showTooltip(
+        event,
+        `${item.date.getFullYear()} annual median: ${item.value.toLocaleString()}`,
+      ),
+    )
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+  const legend = svg
+    .append("g")
+    .attr("class", "chart-legend")
+    .attr("transform", `translate(${margin.left + 8},${margin.top + 4})`);
+  [
+    {
+      label: `${pricePerMetrics[metric]} by release date`,
+      color: "rgba(75, 135, 192, 0.35)",
     },
-    options: {
-      scales: {
-        x: {
-          title: { display: true, text: "Release date" },
-        },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: pricePerMetrics[metric] },
-        },
-      },
-    },
+    { label: `${pricePerMetrics[metric]} annual median`, color: chartColor },
+  ].forEach((entry, index) => {
+    const row = legend
+      .append("g")
+      .attr("transform", `translate(0,${index * 20})`);
+    row
+      .append("line")
+      .attr("x2", 24)
+      .attr("y1", 5)
+      .attr("y2", 5)
+      .attr("stroke", entry.color)
+      .attr("stroke-width", 2.5);
+    row.append("text").attr("x", 31).attr("y", 9).text(entry.label);
   });
 }
 
-function drawThemeScatter(data) {
-  const ctx = document
-    .getElementById("theme-scatter-canvas")
-    .getContext("2d");
+function parseDate(value) {
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 
-  if (themeScatterInstance) {
-    themeScatterInstance.destroy();
-  }
+function themeSummary(data, groupField) {
+  return d3
+    .rollups(
+      data.filter((item) => item[groupField]),
+      (items) => {
+        const pieces = numericValues(items, "pieces");
+        const prices = numericValues(items, "retail_gbp");
+        return {
+          name: items[0][groupField],
+          count: items.length,
+          medianPieces: median(pieces),
+          medianPrice: median(prices),
+        };
+      },
+      (item) => item[groupField],
+    )
+    .map(([, summary]) => summary)
+    .filter(
+      (item) =>
+        Number.isFinite(item.medianPieces) && Number.isFinite(item.medianPrice),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
-  const themes = new Map();
-  data.forEach((item) => {
-    if (!item.theme_l1) {
-      return;
-    }
+function drawScatter(containerSelector, summaries, onPointClick, ariaLabel) {
+  const container = d3.select(containerSelector);
+  const width = container.node().clientWidth;
+  const height = Math.max(440, summaries.length * 24);
+  const legendWidth = 185;
+  const margin = { top: 24, right: 12, bottom: 65, left: 76 };
+  const innerWidth = Math.max(
+    100,
+    width - margin.left - margin.right - legendWidth,
+  );
+  const innerHeight = height - margin.top - margin.bottom;
+  const xMax = d3.max(summaries, (item) => item.medianPrice) || 1;
+  const yMax = d3.max(summaries, (item) => item.medianPieces) || 1;
+  const x = d3
+    .scaleLinear()
+    .domain([0, xMax * 1.08])
+    .nice()
+    .range([0, innerWidth]);
+  const y = d3
+    .scaleLinear()
+    .domain([0, yMax * 1.08])
+    .nice()
+    .range([innerHeight, 0]);
+  const radius = d3
+    .scaleSqrt()
+    .domain([0, d3.max(summaries, (item) => item.count) || 1])
+    .range([4, 22]);
+  const color = d3
+    .scaleOrdinal(themeColors)
+    .domain(summaries.map((item) => item.name));
+  const svg = container
+    .html("")
+    .append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-label", ariaLabel);
+  const plot = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+  plot
+    .append("g")
+    .attr("class", "grid")
+    .call(d3.axisLeft(y).ticks(6).tickSize(-innerWidth).tickFormat(""));
+  plot.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(6));
+  plot
+    .append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(
+      d3
+        .axisBottom(x)
+        .ticks(6)
+        .tickFormat((value) =>
+          new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            maximumFractionDigits: 0,
+          }).format(value),
+        ),
+    );
+  plot
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("text-anchor", "middle")
+    .attr("x", innerWidth / 2)
+    .attr("y", innerHeight + 48)
+    .text("Median UK price (£)");
+  plot
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -innerHeight / 2)
+    .attr("y", -55)
+    .text("Median number of pieces");
 
-    const theme = themes.get(item.theme_l1) || {
-      count: 0,
-      pieces: [],
-      ukPrices: [],
-    };
-    theme.count += 1;
-
-    const pieces = Number(item.pieces);
-    if (item.pieces !== null && item.pieces !== "" && Number.isFinite(pieces)) {
-      theme.pieces.push(pieces);
-    }
-
-    const ukPrice = Number(item.retail_gbp);
-    if (
-      item.retail_gbp !== null &&
-      item.retail_gbp !== "" &&
-      Number.isFinite(ukPrice)
-    ) {
-      theme.ukPrices.push(ukPrice);
-    }
-
-    themes.set(item.theme_l1, theme);
-  });
-
-  const datasets = [...themes.entries()]
-    .filter(([, theme]) => theme.pieces.length && theme.ukPrices.length)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, theme], index) => {
-      const color = themeColors[index % themeColors.length];
-      return {
-        label: name,
-        data: [
-          {
-            x: median(theme.ukPrices),
-            y: median(theme.pieces),
-            r: 4 + (Math.sqrt(theme.count) / Math.sqrt(data.length)) * 18,
-            theme: name,
-            setCount: theme.count,
-          },
-        ],
-        backgroundColor: color,
-        borderColor: "#000000",
-        borderWidth: 1,
-      };
+  plot
+    .selectAll(".scatter-point")
+    .data(summaries, (item) => item.name)
+    .join("circle")
+    .attr("class", "scatter-point")
+    .attr("cx", (item) => x(item.medianPrice))
+    .attr("cy", (item) => y(item.medianPieces))
+    .attr("r", (item) => radius(item.count))
+    .attr("fill", (item) => color(item.name))
+    .attr("tabindex", 0)
+    .attr("role", "button")
+    .attr("aria-label", (item) => `${item.name}, ${item.count} sets`)
+    .on("mouseenter", (event, item) =>
+      showTooltip(
+        event,
+        `${item.name}: ${item.count.toLocaleString()} sets, median ${formatCurrency(item.medianPrice, "GBP")}, ${item.medianPieces.toLocaleString()} pieces`,
+      ),
+    )
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip)
+    .on("click", (_event, item) => onPointClick(item))
+    .on("keydown", (event, item) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onPointClick(item);
+      }
     });
 
-  themeScatterInstance = new Chart(ctx, {
-    type: "bubble",
-    data: {
-      datasets,
-    },
-    options: {
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: { display: true, text: "Median UK price (£)" },
-          ticks: {
-            callback: (value) =>
-              new Intl.NumberFormat("en-GB", {
-                style: "currency",
-                currency: "GBP",
-                maximumFractionDigits: 0,
-              }).format(value),
-          },
-        },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: "Median number of pieces" },
-        },
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "right",
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const point = context.raw;
-              const price = new Intl.NumberFormat("en-GB", {
-                style: "currency",
-                currency: "GBP",
-              }).format(point.x);
-              return `Theme Group: ${point.theme}, ${point.setCount.toLocaleString()} sets, median ${price}, ${point.y.toLocaleString()} pieces`;
-            },
-          },
-        },
-      },
-      onClick: (event, elements, chart) => {
-        if (!elements.length) {
-          return;
-        }
-
-        const theme = chart.data.datasets[elements[0].datasetIndex].label;
-        selectedThemeForTable = theme;
-        selectedSubThemeForTable = null;
-        renderScatterFilteredTable(data);
-        if (theme === selectedThemeForSubTheme) {
-          closeSubThemeChart(data);
-        } else {
-          drawSubThemeScatter(data, theme);
-        }
-      },
-    },
-  });
+  const legend = svg
+    .append("g")
+    .attr("class", "chart-legend")
+    .attr(
+      "transform",
+      `translate(${margin.left + innerWidth + 18},${margin.top})`,
+    );
+  const legendRows = legend
+    .selectAll("g")
+    .data(summaries, (item) => item.name)
+    .join("g")
+    .attr("transform", (_item, index) => `translate(0,${index * 22})`)
+    .attr("tabindex", 0)
+    .attr("role", "button")
+    .attr("aria-label", (item) => `Select ${item.name}`)
+    .on("click", (_event, item) => onPointClick(item))
+    .on("keydown", (event, item) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onPointClick(item);
+      }
+    });
+  legendRows
+    .append("circle")
+    .attr("r", 6)
+    .attr("cx", 5)
+    .attr("cy", 5)
+    .attr("fill", (item) => color(item.name))
+    .attr("stroke", "#000");
+  legendRows
+    .append("text")
+    .attr("x", 17)
+    .attr("y", 9)
+    .text((item) => item.name);
 }
 
-function closeSubThemeChart(data) {
+function drawThemeScatter() {
+  const summaries = themeSummary(allSetData, "theme_l1");
+  drawScatter(
+    "#theme-scatter",
+    summaries,
+    (item) => {
+      selectedThemeForTable = item.name;
+      selectedSubThemeForTable = null;
+      tablePage = 0;
+      renderScatterFilteredTable();
+      if (selectedThemeForSubTheme === item.name) {
+        closeSubThemeChart();
+      } else {
+        drawSubThemeScatter(item.name);
+      }
+    },
+    "Median UK set price and median piece count by theme group, sized by set count",
+  );
+}
+
+function drawSubThemeScatter(parentTheme) {
+  const section = document.getElementById("sub-theme-chart-section");
+  const summaries = themeSummary(
+    allSetData.filter((item) => item.theme_l1 === parentTheme),
+    "theme_l2",
+  );
+  document.getElementById("sub-theme-chart-heading").textContent =
+    `Typical Set Size and UK Price by Theme: ${parentTheme}`;
+  section.hidden = false;
+  selectedThemeForSubTheme = parentTheme;
+  drawScatter(
+    "#sub-theme-scatter",
+    summaries,
+    (item) => {
+      selectedSubThemeForTable =
+        selectedSubThemeForTable === item.name ? null : item.name;
+      tablePage = 0;
+      renderScatterFilteredTable();
+    },
+    `Median UK set price and median piece count by theme in ${parentTheme}, sized by set count`,
+  );
+}
+
+function closeSubThemeChart() {
   document.getElementById("sub-theme-chart-section").hidden = true;
   selectedThemeForSubTheme = null;
   selectedSubThemeForTable = null;
-  renderScatterFilteredTable(data);
-  if (subThemeScatterInstance) {
-    subThemeScatterInstance.destroy();
-    subThemeScatterInstance = null;
-  }
+  renderScatterFilteredTable();
+  d3.select("#sub-theme-scatter").html("");
 }
 
-function drawSubThemeScatter(data, parentTheme) {
-  const section = document.getElementById("sub-theme-chart-section");
-  const chartContainer = document.getElementById("sub-theme-chart-container");
-  const canvas = document.getElementById("sub-theme-scatter-canvas");
-  const ctx = canvas.getContext("2d");
-
-  if (subThemeScatterInstance) {
-    subThemeScatterInstance.destroy();
-  }
-
-  const parentData = data.filter(
-    (item) => item.theme_l1 === parentTheme && item.theme_l2,
-  );
-  const subThemes = new Map();
-  parentData.forEach((item) => {
-    const subTheme = subThemes.get(item.theme_l2) || {
-      count: 0,
-      pieces: [],
-      ukPrices: [],
-    };
-    subTheme.count += 1;
-
-    const pieces = Number(item.pieces);
-    if (item.pieces !== null && item.pieces !== "" && Number.isFinite(pieces)) {
-      subTheme.pieces.push(pieces);
-    }
-
-    const ukPrice = Number(item.retail_gbp);
-    if (
-      item.retail_gbp !== null &&
-      item.retail_gbp !== "" &&
-      Number.isFinite(ukPrice)
-    ) {
-      subTheme.ukPrices.push(ukPrice);
-    }
-
-    subThemes.set(item.theme_l2, subTheme);
-  });
-
-  const datasets = [...subThemes.entries()]
-    .filter(([, subTheme]) => subTheme.pieces.length && subTheme.ukPrices.length)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, subTheme], index) => {
-      const color = themeColors[index % themeColors.length];
-      return {
-        label: name,
-        data: [
-          {
-            x: median(subTheme.ukPrices),
-            y: median(subTheme.pieces),
-            r:
-              4 +
-              (Math.sqrt(subTheme.count) / Math.sqrt(parentData.length)) * 18,
-            subTheme: name,
-            setCount: subTheme.count,
-          },
-        ],
-        backgroundColor: color,
-        borderColor: "#000000",
-        borderWidth: 1,
-      };
-    });
-
-  document.getElementById(
-    "sub-theme-chart-heading",
-  ).textContent = `Typical Set Size and UK Price by Theme: ${parentTheme}`;
-  chartContainer.style.height = `${Math.max(440, datasets.length * 24)}px`;
-  section.hidden = false;
-  selectedThemeForSubTheme = parentTheme;
-
-  subThemeScatterInstance = new Chart(ctx, {
-    type: "bubble",
-    data: { datasets },
-    options: {
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: { display: true, text: "Median UK price (£)" },
-          ticks: {
-            callback: (value) =>
-              new Intl.NumberFormat("en-GB", {
-                style: "currency",
-                currency: "GBP",
-                maximumFractionDigits: 0,
-              }).format(value),
-          },
-        },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: "Median number of pieces" },
-        },
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "right",
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const point = context.raw;
-              const price = new Intl.NumberFormat("en-GB", {
-                style: "currency",
-                currency: "GBP",
-              }).format(point.x);
-              return `Theme: ${point.subTheme}, ${point.setCount.toLocaleString()} sets, median ${price}, ${point.y.toLocaleString()} pieces`;
-            },
-          },
-        },
-      },
-      onClick: (event, elements, chart) => {
-        if (!elements.length) {
-          return;
-        }
-
-        const subTheme =
-          chart.data.datasets[elements[0].datasetIndex].label;
-        selectedSubThemeForTable =
-          selectedSubThemeForTable === subTheme ? null : subTheme;
-        renderScatterFilteredTable(data);
-      },
-    },
-  });
-}
-
-function renderScatterFilteredTable(data) {
-  const filteredData = data
+function renderScatterFilteredTable() {
+  tableRows = allSetData
     .filter(
       (item) =>
-        (!selectedThemeForTable ||
-          item.theme_l1 === selectedThemeForTable) &&
+        (!selectedThemeForTable || item.theme_l1 === selectedThemeForTable) &&
         (!selectedSubThemeForTable ||
           item.theme_l2 === selectedSubThemeForTable),
     )
@@ -491,283 +617,285 @@ function renderScatterFilteredTable(data) {
         a.released.localeCompare(b.released) ||
         a.set_number.localeCompare(b.set_number),
     );
-
-  const heading = document.getElementById("raw-data-heading");
-  const selection = [selectedThemeForTable, selectedSubThemeForTable]
-    .filter(Boolean)
-    .join(" / ");
-  heading.textContent = selection
-    ? `Raw Data — Theme Group: ${selectedThemeForTable}${
-        selectedSubThemeForTable ? ` / Theme: ${selectedSubThemeForTable}` : ""
-      }`
+  const selection = [
+    selectedThemeForTable && `Theme Group: ${selectedThemeForTable}`,
+    selectedSubThemeForTable && `Theme: ${selectedSubThemeForTable}`,
+  ].filter(Boolean);
+  document.getElementById("raw-data-heading").textContent = selection.length
+    ? `Raw Data — ${selection.join(" / ")}`
     : "Raw Data";
-  document.getElementById("clear-scatter-selection").hidden = !selection;
-  populateDataTable(filteredData, {
-    hideThemeGroup: Boolean(selectedThemeForTable),
-    hideTheme: Boolean(selectedSubThemeForTable),
-  });
+  document.getElementById("clear-scatter-selection").hidden =
+    selection.length === 0;
+  tablePage = 0;
+  renderRawTable();
 }
 
 function formatCurrency(value, currency) {
-  if (value == null || value === "") {
+  if (value === null || value === undefined || value === "") {
     return "—";
   }
-
-  const formattedValue = new Intl.NumberFormat("en-GB", {
+  const formatted = new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency,
   }).format(value);
-  return currency === "USD" ? formattedValue.replace("US$", "$") : formattedValue;
+  return currency === "USD" ? formatted.replace("US$", "$") : formatted;
 }
 
-function measureColumnWidth(tableElement, texts) {
-  const canvas = document.createElement("canvas");
+function measureTextWidth(text, font) {
+  const canvas =
+    measureTextWidth.canvas ||
+    (measureTextWidth.canvas = document.createElement("canvas"));
   const context = canvas.getContext("2d");
-  const tableStyle = getComputedStyle(tableElement);
-  context.font = tableStyle.font;
-
-  const widestText = Math.max(
-    ...texts.map((text) => context.measureText(String(text ?? "")).width),
-  );
-  return `${Math.ceil(widestText + 24)}px`;
+  context.font = font;
+  return context.measureText(String(text ?? "")).width;
 }
 
-function populateDataTable(data, { hideThemeGroup, hideTheme }) {
-  const tableElement = $("#data-table");
-  const table = tableElement[0];
-  const headers = [
-    "Set Number",
-    "Set Name",
-    "Theme Group",
-    "Theme",
-    "Sub-Theme",
-    "Pieces",
-    "UK Cost",
-    "US Cost",
-    "EU Cost",
-  ];
-  const shortColumnWidths = new Map([
-    [0, measureColumnWidth(table, [headers[0]])],
-    [5, measureColumnWidth(table, [headers[5]])],
-    [6, measureColumnWidth(table, [headers[6]])],
-    [7, measureColumnWidth(table, [headers[7]])],
-    [8, measureColumnWidth(table, [headers[8]])],
-  ]);
-  let themeGroupWidth = measureColumnWidth(table, [
-    headers[2],
-    ...data.map((item) => item.theme_l1),
-  ]);
-  let themeWidth = measureColumnWidth(table, [
-    headers[3],
-    ...data.map((item) => item.theme_l2),
-  ]);
-  let subThemeWidth = measureColumnWidth(table, [
-    headers[4],
-    ...data.map((item) => item.theme_l3),
-  ]);
-  const maxThemeColumnWidth = 160;
-  themeGroupWidth = `${Math.min(
-    parseFloat(themeGroupWidth),
-    maxThemeColumnWidth,
-  )}px`;
-  themeWidth = `${Math.min(parseFloat(themeWidth), maxThemeColumnWidth)}px`;
-  subThemeWidth = `${Math.min(
-    parseFloat(subThemeWidth),
-    maxThemeColumnWidth,
-  )}px`;
-  const tableContainerWidth = table.closest("#raw-data").clientWidth;
-  const compactColumnWidth = [...shortColumnWidths.values()].reduce(
-    (total, width) => total + parseFloat(width),
-    0,
+function visibleRawColumns() {
+  return rawColumns.filter(
+    (column) =>
+      !(column.key === "theme_l1" && selectedThemeForTable) &&
+      !(column.key === "theme_l2" && selectedSubThemeForTable),
   );
-  const availableThemeColumnWidth = Math.max(
-    0,
-    tableContainerWidth - compactColumnWidth - 240 - 8,
-  );
-  const visibleThemeColumnWidths = [
-    ...(hideThemeGroup ? [] : [themeGroupWidth]),
-    ...(hideTheme ? [] : [themeWidth]),
-    subThemeWidth,
-  ];
-  const visibleThemeColumnWidth = visibleThemeColumnWidths.reduce(
-    (total, width) => total + parseFloat(width),
-    0,
-  );
-  if (visibleThemeColumnWidth > availableThemeColumnWidth) {
-    const widthScale = availableThemeColumnWidth / visibleThemeColumnWidth;
-    themeGroupWidth = `${Math.floor(parseFloat(themeGroupWidth) * widthScale)}px`;
-    themeWidth = `${Math.floor(parseFloat(themeWidth) * widthScale)}px`;
-    subThemeWidth = `${Math.floor(parseFloat(subThemeWidth) * widthScale)}px`;
+}
+
+function formatColumnValue(column, row) {
+  const value = row[column.key];
+  if (column.currency) {
+    return formatCurrency(value, column.currency);
   }
-  const fixedColumnWidths = [
-    ...shortColumnWidths.values(),
-    subThemeWidth,
-    ...(hideThemeGroup ? [] : [themeGroupWidth]),
-    ...(hideTheme ? [] : [themeWidth]),
-  ];
-  const setNameWidth = `${Math.max(
-    240,
-    tableContainerWidth -
-      fixedColumnWidths.reduce((total, width) => total + parseFloat(width), 0) -
-      2,
-  )}px`;
-  const columnWidths = [
-    shortColumnWidths.get(0),
-    setNameWidth,
-    themeGroupWidth,
-    themeWidth,
-    subThemeWidth,
-    shortColumnWidths.get(5),
-    shortColumnWidths.get(6),
-    shortColumnWidths.get(7),
-    shortColumnWidths.get(8),
-  ];
-
-  if ($.fn.DataTable.isDataTable(tableElement)) {
-    tableElement.DataTable().clear().destroy();
-  }
-
-  table.style.removeProperty("width");
-  table.style.removeProperty("table-layout");
-  table.querySelectorAll("thead th").forEach((header) => {
-    header.removeAttribute("style");
-  });
-  table.querySelectorAll("colgroup").forEach((colgroup) => colgroup.remove());
-  const colgroup = document.createElement("colgroup");
-  columnWidths.forEach((width, index) => {
-    const column = document.createElement("col");
-    column.style.width = width;
-    if ((index === 2 && hideThemeGroup) || (index === 3 && hideTheme)) {
-      column.style.display = "none";
-    }
-    colgroup.appendChild(column);
-  });
-  table.insertBefore(colgroup, table.firstChild);
-
-  tableElement.DataTable({
-    data: data.map((item) => [
-      item.set_number,
-      item.set_name,
-      item.theme_l1,
-      item.theme_l2,
-      item.theme_l3 || "—",
-      item.pieces,
-      formatCurrency(item.retail_gbp, "GBP"),
-      formatCurrency(item.retail_usd, "USD"),
-      formatCurrency(item.retail_eur, "EUR"),
-    ]),
-    columns: [
-      {
-        title: headers[0],
-        width: columnWidths[0],
-        className: "raw-data-compact",
-      },
-      {
-        title: headers[1],
-        width: columnWidths[1],
-        className: "raw-data-set-name",
-      },
-      {
-        title: headers[2],
-        width: columnWidths[2],
-        className: "raw-data-theme",
-        visible: !hideThemeGroup,
-      },
-      {
-        title: headers[3],
-        width: columnWidths[3],
-        className: "raw-data-theme",
-        visible: !hideTheme,
-      },
-      {
-        title: headers[4],
-        width: columnWidths[4],
-        className: "raw-data-theme",
-      },
-      {
-        title: headers[5],
-        width: columnWidths[5],
-        className: "raw-data-compact",
-      },
-      {
-        title: headers[6],
-        width: columnWidths[6],
-        className: "raw-data-compact",
-      },
-      {
-        title: headers[7],
-        width: columnWidths[7],
-        className: "raw-data-compact",
-      },
-      {
-        title: headers[8],
-        width: columnWidths[8],
-        className: "raw-data-compact",
-      },
-    ],
-    autoWidth: false,
-    scrollX: true,
-    order: [],
-  });
-
-  const tableWidth = columnWidths.reduce((total, width, index) => {
-    if ((index === 2 && hideThemeGroup) || (index === 3 && hideTheme)) {
-      return total;
-    }
-    return total + parseFloat(width);
-  }, 0);
-  const tableWrapper = table.closest(".dataTables_wrapper");
-  const headerTable = tableWrapper.querySelector(".dataTables_scrollHead table");
-  const headerColgroup = colgroup.cloneNode(true);
-  headerTable.querySelectorAll("colgroup").forEach((existingColgroup) => {
-    existingColgroup.remove();
-  });
-  headerTable.insertBefore(headerColgroup, headerTable.firstChild);
-  tableWrapper
-    .querySelectorAll(".dataTables_scrollHead table, .dataTables_scrollBody table")
-    .forEach((scrollTable) => {
-      scrollTable.style.setProperty("width", `${tableWidth}px`, "important");
-      scrollTable.style.setProperty("table-layout", "fixed", "important");
-    });
-  tableWrapper.querySelector(".dataTables_scrollHeadInner").style.width =
-    `${tableWidth}px`;
+  return column.format ? column.format(value) : (value ?? "—");
 }
 
-function populateCategoryFilter(data) {
-  const categoryFilter = document.getElementById("category-filter");
-  categoryFilter.innerHTML = "";
-  categoryFilter.appendChild(
-    new Option("All Theme Groups", "all", true, true),
-  );
-
-  const themes = [
-    ...new Set(data.map((item) => item.theme_l1).filter((theme) => theme)),
-  ].sort((a, b) => a.localeCompare(b));
-  themes.forEach((theme) => {
-    categoryFilter.appendChild(new Option(theme, theme));
-  });
-}
-
-function populateSubThemeFilter(data) {
-  const categoryFilter = document.getElementById("category-filter");
-  const subThemeFilter = document.getElementById("sub-theme-filter");
-  const selectedTheme = categoryFilter.value;
-  const subThemes = [
-    ...new Set(
-      data
-        .filter(
-          (item) => selectedTheme === "all" || item.theme_l1 === selectedTheme,
-        )
-        .map((item) => item.theme_l2)
-        .filter((subTheme) => subTheme),
+function renderRawTable() {
+  const table = document.getElementById("data-table");
+  const visibleColumns = visibleRawColumns();
+  const search = document
+    .getElementById("table-search")
+    .value.trim()
+    .toLocaleLowerCase();
+  const matchingRows = tableRows.filter((row) =>
+    rawColumns.some((column) =>
+      String(formatColumnValue(column, row) ?? "")
+        .toLocaleLowerCase()
+        .includes(search),
     ),
-  ].sort((a, b) => a.localeCompare(b));
-
-  subThemeFilter.innerHTML = "";
-  subThemeFilter.appendChild(
-    new Option("All Themes", "all", true, true),
   );
-  subThemes.forEach((subTheme) => {
-    subThemeFilter.appendChild(new Option(subTheme, subTheme));
+  const sortedRows = [...matchingRows].sort((a, b) => {
+    const left = a[tableSort.key];
+    const right = b[tableSort.key];
+    const comparison =
+      typeof left === "number" && typeof right === "number"
+        ? left - right
+        : String(left ?? "").localeCompare(String(right ?? ""), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+    return tableSort.direction === "asc" ? comparison : -comparison;
   });
+  const pageSize = Number(document.getElementById("table-page-size").value);
+  const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
+  tablePage = Math.min(tablePage, pageCount - 1);
+  const pageRows = sortedRows.slice(
+    tablePage * pageSize,
+    (tablePage + 1) * pageSize,
+  );
+  const tableContainerWidth = table.parentElement.clientWidth;
+  const widths = calculateColumnWidths(
+    visibleColumns,
+    tableRows,
+    tableContainerWidth,
+  );
+  table.style.width = `${Math.max(
+    tableContainerWidth,
+    widths.reduce((total, width) => total + width, 0),
+  )}px`;
+
+  const colgroup = document.createElement("colgroup");
+  visibleColumns.forEach((column, index) => {
+    const col = document.createElement("col");
+    col.style.width = `${widths[index]}px`;
+    colgroup.appendChild(col);
+  });
+  table.replaceChildren(
+    colgroup,
+    document.createElement("thead"),
+    document.createElement("tbody"),
+  );
+  const thead = table.querySelector("thead");
+  const headerRow = thead.insertRow();
+  visibleColumns.forEach((column) => {
+    const header = document.createElement("th");
+    header.scope = "col";
+    header.textContent = column.title;
+    header.className = column.className;
+    if (tableSort.key === column.key) {
+      header.setAttribute(
+        "aria-sort",
+        tableSort.direction === "asc" ? "ascending" : "descending",
+      );
+    }
+    header.addEventListener("click", () => {
+      tableSort = {
+        key: column.key,
+        direction:
+          tableSort.key === column.key && tableSort.direction === "asc"
+            ? "desc"
+            : "asc",
+      };
+      renderRawTable();
+    });
+    headerRow.appendChild(header);
+  });
+  const tbody = table.querySelector("tbody");
+  pageRows.forEach((row) => {
+    const tr = tbody.insertRow();
+    visibleColumns.forEach((column) => {
+      const cell = tr.insertCell();
+      cell.className = column.className;
+      cell.textContent = formatColumnValue(column, row);
+    });
+  });
+  document.getElementById("table-info").textContent = sortedRows.length
+    ? `Showing ${tablePage * pageSize + 1} to ${Math.min((tablePage + 1) * pageSize, sortedRows.length)} of ${sortedRows.length} entries`
+    : "Showing 0 to 0 of 0 entries";
+  document.getElementById("table-previous").disabled = tablePage === 0;
+  document.getElementById("table-next").disabled = tablePage >= pageCount - 1;
+  renderPageButtons(pageCount);
+}
+
+function calculateColumnWidths(columns, data, tableWidth) {
+  const tableStyle = getComputedStyle(document.getElementById("data-table"));
+  const font = tableStyle.font;
+  const compactWidths = columns.map((column) => {
+    if (
+      column.key === "set_number" ||
+      column.key === "pieces" ||
+      column.currency
+    ) {
+      return Math.ceil(measureTextWidth(column.title, `bold ${font}`) + 24);
+    }
+    return null;
+  });
+  const desiredThemeWidths = columns.map((column) => {
+    if (!["theme_l1", "theme_l2", "theme_l3"].includes(column.key)) {
+      return null;
+    }
+    const widest = Math.max(
+      measureTextWidth(column.title, `bold ${font}`),
+      ...data.map((row) =>
+        measureTextWidth(formatColumnValue(column, row), font),
+      ),
+    );
+    return Math.min(160, Math.ceil(widest + 24));
+  });
+  const compactTotal = compactWidths.reduce(
+    (sum, width) => sum + (width || 0),
+    0,
+  );
+  const maxSetNameWidth = Math.max(240, tableWidth - compactTotal - 8);
+  let nameWidth = maxSetNameWidth;
+  const desiredThemeTotal = desiredThemeWidths.reduce(
+    (sum, width) => sum + (width || 0),
+    0,
+  );
+  const availableThemeTotal = Math.max(0, tableWidth - compactTotal - 240 - 8);
+  const scale =
+    desiredThemeTotal > availableThemeTotal
+      ? availableThemeTotal / desiredThemeTotal
+      : 1;
+  const widths = columns.map((column, index) => {
+    if (compactWidths[index] !== null) {
+      return compactWidths[index];
+    }
+    if (column.key === "set_name") {
+      return nameWidth;
+    }
+    if (desiredThemeWidths[index] !== null) {
+      return Math.max(60, Math.floor(desiredThemeWidths[index] * scale));
+    }
+    return 100;
+  });
+  const total = widths.reduce((sum, width) => sum + width, 0);
+  nameWidth = Math.max(240, nameWidth + tableWidth - total - 2);
+  const nameIndex = columns.findIndex((column) => column.key === "set_name");
+  if (nameIndex >= 0) {
+    widths[nameIndex] = nameWidth;
+  }
+  return widths;
+}
+
+function renderPageButtons(pageCount) {
+  const list = document.getElementById("table-page-list");
+  list.replaceChildren();
+  const first = Math.max(0, Math.min(tablePage - 2, pageCount - 5));
+  const last = Math.min(pageCount - 1, first + 4);
+
+  const appendPageButton = (page) => {
+    const button = document.createElement("button");
+    button.className = "page-button";
+    button.type = "button";
+    button.textContent = String(page + 1);
+    if (page === tablePage) {
+      button.setAttribute("aria-current", "page");
+    }
+    button.addEventListener("click", () => {
+      tablePage = page;
+      renderRawTable();
+    });
+    list.appendChild(button);
+  };
+
+  const appendEllipsis = () => {
+    const ellipsis = document.createElement("span");
+    ellipsis.textContent = " … ";
+    list.appendChild(ellipsis);
+  };
+
+  if (first > 0) {
+    appendPageButton(0);
+    if (first > 1) {
+      appendEllipsis();
+    }
+  }
+
+  for (let page = first; page <= last; page += 1) {
+    appendPageButton(page);
+  }
+
+  if (last < pageCount - 1) {
+    if (last < pageCount - 2) {
+      appendEllipsis();
+    }
+    appendPageButton(pageCount - 1);
+  }
+}
+
+function redrawCharts() {
+  if (!allSetData.length) {
+    return;
+  }
+  drawLineChart(
+    getDropdownFilteredData(),
+    document.getElementById("chart-type-selector").value,
+  );
+  drawThemeScatter();
+  if (selectedThemeForSubTheme) {
+    drawSubThemeScatter(selectedThemeForSubTheme);
+  }
+  renderRawTable();
+}
+
+function showTooltip(event, text) {
+  d3.select("#chart-tooltip").text(text).attr("hidden", null);
+  moveTooltip(event);
+}
+
+function moveTooltip(event) {
+  d3.select("#chart-tooltip")
+    .style("left", `${event.clientX + 12}px`)
+    .style("top", `${event.clientY + 12}px`);
+}
+
+function hideTooltip() {
+  d3.select("#chart-tooltip").attr("hidden", true);
 }

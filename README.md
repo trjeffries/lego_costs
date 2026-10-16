@@ -16,6 +16,8 @@ A small detour I took into building a web app, due to having no knowlege of Pyth
 
 ### html_project
 
-…it struck me that actually, most charts online don't use Python at all, and that actually I don't want to rely on a third-party to host everything I do (he writes, on a website hosted by GitHub). So, I decided to throw that off for now and rebuild (and, in due course, complete) the project using HTML, CSS and JavaScript. Never built a website before, this could be fun.
+…it struck me that actually, most charts online don't use Python at all, and that actually I don't want to rely on a third-party to host everything I do (he writes, on a website hosted by GitHub). So, I decided to throw that off for now and rebuild (and, in due course, complete) the project using HTML, CSS and JavaScript[^2]. Never built a website before, this could be fun.
+
+[^2]: And speaking of abandoning ones, I got a large part of the way through _that_ before I needed more my original library of choice, Chart.js, could provide, so I switched to D3.js. That version is also available, in the /chart_js/ folder.
 
 The HTML dashboard reads static JSON files from `html_project/assets`, rebuilt from dbt's DuckDB output by the `duckdb_to_json.py` script. To preview the site locally without Node.js, run `python3 -m http.server 8000` from the repository root and open `http://localhost:8000/html_project/`.

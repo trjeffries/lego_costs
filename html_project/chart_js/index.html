@@ -7,14 +7,16 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/d3_style.css" />
-    <title>LEGO Set Cost Dashboard — D3</title>
+    <link rel="stylesheet" href="style.css" />
+    <title>LEGO Set Cost Dashboard</title>
   </head>
   <body>
-    <main class="container d3-dashboard">
-      <h1>LEGO Set Cost Dashboard</h1>
+    <div class="container">
+      <!-- Centered Heading -->
+      <h1 class="text-center">LEGO Set Cost Dashboard</h1>
 
-      <h2>Key Metrics</h2>
+      <!-- Key Metrics Section -->
+      <h2 class="mt-5">Key Metrics</h2>
       <div id="key-metrics" class="row text-center my-4">
         <div class="col-md-4">
           <h4>Number of Sets Released</h4>
@@ -30,7 +32,8 @@
         </div>
       </div>
 
-      <section class="my-4" aria-label="Price per metrics over time">
+      <!-- Chart Section -->
+      <div class="chart-section my-4">
         <div class="row mb-3">
           <div class="col-md-4">
             <label for="category-filter">Theme Group</label>
@@ -57,13 +60,8 @@
             </select>
           </div>
         </div>
-        <div
-          id="line-chart"
-          class="d3-chart"
-          role="img"
-          aria-label="Price per metric by release date and annual median"
-        ></div>
-      </section>
+        <canvas id="chart-canvas"></canvas>
+      </div>
 
       <p id="data-status" class="text-danger" role="alert"></p>
 
@@ -71,12 +69,11 @@
         <h3 id="theme-scatter-heading">
           Typical Set Size and UK Price by Theme Group
         </h3>
-        <div
-          id="theme-scatter"
-          class="d3-chart d3-scatter"
+        <canvas
+          id="theme-scatter-canvas"
+          aria-label="Scatter plot of median UK set price and median piece count by theme group, sized by number of sets"
           role="img"
-          aria-label="Median UK set price and median piece count by theme group, sized by number of sets"
-        ></div>
+        ></canvas>
       </section>
 
       <section
@@ -97,15 +94,17 @@
             Close
           </button>
         </div>
-        <div
-          id="sub-theme-scatter"
-          class="d3-chart d3-scatter"
-          role="img"
-          aria-label="Median UK set price and median piece count by theme, sized by number of sets"
-        ></div>
+        <div id="sub-theme-chart-container">
+          <canvas
+            id="sub-theme-scatter-canvas"
+            aria-label="Scatter plot of median UK set price and median piece count by theme, sized by number of sets"
+            role="img"
+          ></canvas>
+        </div>
       </section>
 
-      <section id="raw-data" class="my-4">
+      <!-- Raw Data Table Section -->
+      <div id="raw-data" class="my-4">
         <div class="d-flex justify-content-between align-items-center">
           <h3 id="raw-data-heading">Raw Data</h3>
           <button
@@ -117,42 +116,17 @@
             Clear scatter selection
           </button>
         </div>
-        <div class="d3-table-controls">
-          <label>
-            Show
-            <select id="table-page-size" aria-label="Rows per page">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            entries
-          </label>
-          <label>
-            Search:
-            <input id="table-search" type="search" />
-          </label>
-        </div>
-        <div class="d3-table-scroll">
-          <table id="data-table" class="table table-striped table-bordered">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="d3-table-footer">
-          <span id="table-info" role="status"></span>
-          <nav aria-label="Raw data pages">
-            <button id="table-previous" type="button">Previous</button>
-            <span id="table-page-list"></span>
-            <button id="table-next" type="button">Next</button>
-          </nav>
-        </div>
-      </section>
-    </main>
+        <table
+          id="data-table"
+          class="table table-striped table-bordered"
+        ></table>
+      </div>
+    </div>
 
-    <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="script_d3.js"></script>
+    <!-- Required JS Libraries -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>

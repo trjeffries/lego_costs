@@ -1,31 +1,21 @@
-/* client/style.css */
 body {
   background-color: #f8f9fa;
   font-family: "Arial", sans-serif;
 }
 
 h1 {
-  text-align: center; /* Center the heading */
-  margin-top: 20px; /* Add spacing above the heading */
-  margin-bottom: 40px; /* Add spacing below the heading */
-}
-
-.container .filters {
   margin-top: 20px;
-  margin-bottom: 60px !important; /* Ensure larger spacing between filters and Key Metrics */
+  margin-bottom: 40px;
+  text-align: center;
 }
 
-.container #key-metrics {
-  margin-top: 40px !important; /* Additional spacing above the Key Metrics section */
-  margin-bottom: 20px; /* Optional spacing below */
+.d3-dashboard {
+  padding-bottom: 2rem;
 }
 
-.key-metrics div {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #f4f4f4;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.d3-dashboard #key-metrics {
+  margin-top: 40px !important;
+  margin-bottom: 20px;
 }
 
 #key-metrics h4 {
@@ -37,18 +27,92 @@ h1 {
   font-weight: bold;
 }
 
-#chart-canvas,
-#theme-scatter-canvas {
-  max-height: 440px;
+.d3-chart {
+  width: 100%;
+  min-height: 360px;
 }
 
-#sub-theme-chart-container {
-  position: relative;
+.d3-chart svg {
+  display: block;
   width: 100%;
+  overflow: visible;
+}
+
+.d3-chart .axis path,
+.d3-chart .axis line {
+  stroke: #777;
+}
+
+.d3-chart .axis text,
+.d3-chart .axis-label,
+.d3-chart .grid line,
+.d3-chart .chart-legend text {
+  fill: #333;
+  font-size: 12px;
+}
+
+.d3-chart .grid line {
+  stroke: #ddd;
+}
+
+.d3-chart .grid path {
+  display: none;
+}
+
+.d3-chart .line-release {
+  fill: none;
+  stroke: rgba(75, 135, 192, 0.35);
+  stroke-width: 1.5;
+}
+
+.d3-chart .line-annual {
+  fill: none;
+  stroke: rgb(75, 135, 192);
+  stroke-width: 2.5;
+}
+
+.d3-chart .scatter-point {
+  stroke: #000;
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.d3-chart .scatter-point:hover {
+  stroke-width: 2.5;
+}
+
+.d3-table-controls,
+.d3-table-footer,
+.d3-table-footer nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.d3-table-controls {
+  margin-bottom: 0.75rem;
+}
+
+.d3-table-controls label {
+  margin-bottom: 0;
+}
+
+.d3-table-controls select,
+.d3-table-controls input {
+  margin: 0 0.25rem;
+}
+
+.d3-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 #data-table {
-  width: 100% !important;
+  width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0.5rem;
 }
 
 #data-table th,
@@ -56,50 +120,64 @@ h1 {
   vertical-align: top;
 }
 
+#data-table th {
+  cursor: pointer;
+}
+
 #data-table .raw-data-compact {
   white-space: nowrap;
 }
 
-#data-table .raw-data-theme {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
+#data-table .raw-data-theme,
 #data-table .raw-data-set-name {
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
-.dataTables_wrapper {
-  overflow-x: auto;
+.d3-table-footer {
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
 }
 
-/* Fix for DataTables Pagination Spacing */
-.dataTables_wrapper .dataTables_paginate {
-  text-align: center;
-  margin-top: 10px;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-  margin: 0 12px;
-  padding: 5px 10px;
+.d3-table-footer button,
+.d3-table-footer .page-button {
   border: 1px solid #ddd;
   border-radius: 4px;
-  background-color: #f9f9f9;
+  background: #f9f9f9;
   color: #007bff;
-  text-decoration: none;
-  display: inline-block;
+  padding: 0.25rem 0.6rem;
 }
 
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-  background-color: #007bff;
-  color: #fff;
-  border: 1px solid #007bff;
+.d3-table-footer button:disabled {
+  color: #888;
+  cursor: default;
 }
 
-.dataTables_wrapper .dataTables_paginate .paginate_button.current {
-  font-weight: bold;
-  color: #fff;
-  background-color: #007bff;
-  border-color: #007bff;
+.d3-table-footer .page-button[aria-current="page"] {
+  background: #007bff;
+  color: white;
+}
+
+.d3-tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 320px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 4px;
+  background: rgba(20, 20, 20, 0.9);
+  color: white;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .d3-table-controls,
+  .d3-table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #data-table {
+    font-size: 0.8rem;
+  }
 }

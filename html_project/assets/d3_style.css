@@ -1,0 +1,183 @@
+body {
+  background-color: #f8f9fa;
+  font-family: "Arial", sans-serif;
+}
+
+h1 {
+  margin-top: 20px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.d3-dashboard {
+  padding-bottom: 2rem;
+}
+
+.d3-dashboard #key-metrics {
+  margin-top: 40px !important;
+  margin-bottom: 20px;
+}
+
+#key-metrics h4 {
+  font-size: 1.1rem;
+}
+
+#key-metrics p {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.d3-chart {
+  width: 100%;
+  min-height: 360px;
+}
+
+.d3-chart svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.d3-chart .axis path,
+.d3-chart .axis line {
+  stroke: #777;
+}
+
+.d3-chart .axis text,
+.d3-chart .axis-label,
+.d3-chart .grid line,
+.d3-chart .chart-legend text {
+  fill: #333;
+  font-size: 12px;
+}
+
+.d3-chart .grid line {
+  stroke: #ddd;
+}
+
+.d3-chart .grid path {
+  display: none;
+}
+
+.d3-chart .line-release {
+  fill: none;
+  stroke: rgba(75, 135, 192, 0.35);
+  stroke-width: 1.5;
+}
+
+.d3-chart .line-annual {
+  fill: none;
+  stroke: rgb(75, 135, 192);
+  stroke-width: 2.5;
+}
+
+.d3-chart .scatter-point {
+  stroke: #000;
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.d3-chart .scatter-point:hover {
+  stroke-width: 2.5;
+}
+
+.d3-table-controls,
+.d3-table-footer,
+.d3-table-footer nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.d3-table-controls {
+  margin-bottom: 0.75rem;
+}
+
+.d3-table-controls label {
+  margin-bottom: 0;
+}
+
+.d3-table-controls select,
+.d3-table-controls input {
+  margin: 0 0.25rem;
+}
+
+.d3-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+#data-table {
+  width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0.5rem;
+}
+
+#data-table th,
+#data-table td {
+  vertical-align: top;
+}
+
+#data-table th {
+  cursor: pointer;
+}
+
+#data-table .raw-data-compact {
+  white-space: nowrap;
+}
+
+#data-table .raw-data-theme,
+#data-table .raw-data-set-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.d3-table-footer {
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.d3-table-footer button,
+.d3-table-footer .page-button {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f9f9f9;
+  color: #007bff;
+  padding: 0.25rem 0.6rem;
+}
+
+.d3-table-footer button:disabled {
+  color: #888;
+  cursor: default;
+}
+
+.d3-table-footer .page-button[aria-current="page"] {
+  background: #007bff;
+  color: white;
+}
+
+.d3-tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 320px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 4px;
+  background: rgba(20, 20, 20, 0.9);
+  color: white;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .d3-table-controls,
+  .d3-table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #data-table {
+    font-size: 0.8rem;
+  }
+}

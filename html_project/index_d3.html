@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="assets/d3_style.css" />
+    <title>LEGO Set Cost Dashboard — D3</title>
+  </head>
+  <body>
+    <main class="container d3-dashboard">
+      <h1>LEGO Set Cost Dashboard</h1>
+
+      <h2>Key Metrics</h2>
+      <div id="key-metrics" class="row text-center my-4">
+        <div class="col-md-4">
+          <h4>Number of Sets Released</h4>
+          <p id="sets-released">0</p>
+        </div>
+        <div class="col-md-4">
+          <h4>Average Pieces per US Big Mac</h4>
+          <p id="average-pieces-per-us-big-mac">0</p>
+        </div>
+        <div class="col-md-4">
+          <h4>Average Pieces per Pound</h4>
+          <p id="average-pieces-per-pound">0</p>
+        </div>
+      </div>
+
+      <section class="my-4" aria-label="Price per metrics over time">
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="category-filter">Theme Group</label>
+            <select id="category-filter" class="form-control">
+              <option value="all">All Theme Groups</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="sub-theme-filter">Theme</label>
+            <select id="sub-theme-filter" class="form-control">
+              <option value="all">All Themes</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="chart-type-selector">Select Chart:</label>
+            <select id="chart-type-selector" class="form-control">
+              <option value="ppbm_us">Pieces per Big Mac (US)</option>
+              <option value="ppbm_gb">Pieces per Big Mac (UK)</option>
+              <option value="ppbm_eu">Pieces per Big Mac (EU)</option>
+              <option value="ppsp">Pieces per S&amp;P 500</option>
+              <option value="ppp">Pieces per Pound</option>
+              <option value="ppd">Pieces per Dollar</option>
+              <option value="ppe">Pieces per Euro</option>
+            </select>
+          </div>
+        </div>
+        <div
+          id="line-chart"
+          class="d3-chart"
+          role="img"
+          aria-label="Price per metric by release date and annual median"
+        ></div>
+      </section>
+
+      <p id="data-status" class="text-danger" role="alert"></p>
+
+      <section class="my-4" aria-labelledby="theme-scatter-heading">
+        <h3 id="theme-scatter-heading">
+          Typical Set Size and UK Price by Theme Group
+        </h3>
+        <div
+          id="theme-scatter"
+          class="d3-chart d3-scatter"
+          role="img"
+          aria-label="Median UK set price and median piece count by theme group, sized by number of sets"
+        ></div>
+      </section>
+
+      <section
+        id="sub-theme-chart-section"
+        class="my-4"
+        aria-labelledby="sub-theme-chart-heading"
+        hidden
+      >
+        <div class="d-flex justify-content-between align-items-center">
+          <h3 id="sub-theme-chart-heading">
+            Typical Set Size and UK Price by Theme
+          </h3>
+          <button
+            id="close-sub-theme-chart"
+            class="btn btn-outline-secondary btn-sm"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+        <div
+          id="sub-theme-scatter"
+          class="d3-chart d3-scatter"
+          role="img"
+          aria-label="Median UK set price and median piece count by theme, sized by number of sets"
+        ></div>
+      </section>
+
+      <section id="raw-data" class="my-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <h3 id="raw-data-heading">Raw Data</h3>
+          <button
+            id="clear-scatter-selection"
+            class="btn btn-outline-secondary btn-sm"
+            type="button"
+            hidden
+          >
+            Clear scatter selection
+          </button>
+        </div>
+        <div class="d3-table-controls">
+          <label>
+            Show
+            <select id="table-page-size" aria-label="Rows per page">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            entries
+          </label>
+          <label>
+            Search:
+            <input id="table-search" type="search" />
+          </label>
+        </div>
+        <div class="d3-table-scroll">
+          <table id="data-table" class="table table-striped table-bordered">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="d3-table-footer">
+          <span id="table-info" role="status"></span>
+          <nav aria-label="Raw data pages">
+            <button id="table-previous" type="button">Previous</button>
+            <span id="table-page-list"></span>
+            <button id="table-next" type="button">Next</button>
+          </nav>
+        </div>
+      </section>
+    </main>
+
+    <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="script_d3.js"></script>
+  </body>
+</html>

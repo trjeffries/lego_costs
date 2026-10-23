@@ -59,6 +59,7 @@ const rawColumns = [
 ];
 
 let allSetData = [];
+let annualBigMacData = [];
 let tableRows = [];
 let selectedThemeForSubTheme = null;
 let selectedThemeForTable = null;
@@ -69,12 +70,18 @@ let resizeTimer = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const response = await fetch("assets/full_output.json");
-    if (!response.ok) {
-      throw new Error(`Data request failed with status ${response.status}`);
+    const [setsResponse, bigMacResponse] = await Promise.all([
+      fetch("assets/full_output.json"),
+      fetch("assets/big_mac_gbp_annual.json"),
+    ]);
+    if (!setsResponse.ok || !bigMacResponse.ok) {
+      throw new Error("A dashboard data request failed");
     }
-    allSetData = await response.json();
-    if (!Array.isArray(allSetData) || allSetData.length === 0) {
+    [allSetData, annualBigMacData] = await Promise.all([
+      setsResponse.json(),
+      bigMacResponse.json(),
+    ]);
+    if (!Array.isArray(allSetData) || allSetData.length === 0 || !Array.isArray(annualBigMacData)) {
       document.getElementById("data-status").textContent =
         "No LEGO set data is available.";
       return;
@@ -90,6 +97,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 function initializeDashboard() {
   populateCategoryFilter();
   populateSubThemeFilter();
+  initializeYearFilter();
+  initializeReasonTabs();
   document
     .getElementById("chart-type-selector")
     .addEventListener("change", updateFilteredDashboard);
@@ -130,8 +139,48 @@ function initializeDashboard() {
     resizeTimer = window.setTimeout(redrawCharts, 100);
   });
   updateFilteredDashboard();
+  drawTopFivePriceChart(allSetData, annualBigMacData);
   drawThemeScatter();
   renderScatterFilteredTable();
+}
+
+function initializeReasonTabs() {
+  const tabs = [...document.querySelectorAll('.question-grid [role="tab"]')];
+  const showPanel = (selectedTab) => {
+    if (selectedTab.getAttribute("aria-selected") === "true") {
+      return;
+    }
+    tabs.forEach((tab) => {
+      const selected = tab === selectedTab;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+    });
+    if (selectedTab.id === "top-end-tab") {
+      drawTopFivePriceChart(allSetData, annualBigMacData);
+    }
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => showPanel(tab));
+    tab.addEventListener("keydown", (event) => {
+      let nextIndex;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        nextIndex = (index + 1) % tabs.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = tabs.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      tabs[nextIndex].focus();
+      showPanel(tabs[nextIndex]);
+    });
+  });
 }
 
 function populateCategoryFilter() {
@@ -162,14 +211,106 @@ function populateSubThemeFilter() {
   select.value = themes.includes(currentValue) ? currentValue : "all";
 }
 
+function initializeYearFilter() {
+  const years = allSetData
+    .map((item) => item.year_released)
+    .filter(Number.isInteger);
+  const firstYear = Math.min(...years);
+  const lastYear = Math.max(...years);
+  const startInput = document.getElementById("year-start");
+  const endInput = document.getElementById("year-end");
+  const track = document.getElementById("year-range-track");
+  const filter = document.getElementById("year-filter");
+
+  for (const input of [startInput, endInput]) {
+    input.setAttribute("aria-valuemin", firstYear);
+    input.setAttribute("aria-valuemax", lastYear);
+  }
+  startInput.value = firstYear;
+  endInput.value = lastYear;
+  document.getElementById("year-min-label").textContent = firstYear;
+  document.getElementById("year-max-label").textContent = lastYear;
+
+  function updateRange(redraw = true) {
+    const start = Number(startInput.value);
+    const end = Number(endInput.value);
+    document.getElementById("year-start-value").value = start;
+    document.getElementById("year-end-value").value = end;
+    document.getElementById("year-filter-value").textContent = `${start}–${end}`;
+    startInput.setAttribute("aria-valuenow", start);
+    endInput.setAttribute("aria-valuenow", end);
+    const position = (year) => `${((year - firstYear) / (lastYear - firstYear || 1)) * 100}%`;
+    startInput.style.setProperty("--position", position(start));
+    endInput.style.setProperty("--position", position(end));
+    track.style.setProperty("--start-position", position(start));
+    track.style.setProperty("--end-position", position(end));
+    if (redraw) updateFilteredDashboard();
+  }
+
+  function setYear(input, year) {
+    const lower = input === startInput ? firstYear : Number(startInput.value);
+    const upper = input === startInput ? Number(endInput.value) : lastYear;
+    const next = Math.max(lower, Math.min(upper, year));
+    if (Number(input.value) === next) return;
+    input.value = next;
+    updateRange();
+  }
+
+  function yearAt(pointerX) {
+    const bounds = track.getBoundingClientRect();
+    return firstYear + Math.round(((pointerX - bounds.left) / bounds.width) * (lastYear - firstYear));
+  }
+
+  let activeInput = null;
+  let grabOffset = 0;
+  track.addEventListener("pointerdown", (event) => {
+    const clickedThumb = event.target.closest(".year-range-thumb");
+    const year = yearAt(event.clientX);
+    activeInput = clickedThumb || (Math.abs(year - Number(startInput.value)) <= Math.abs(year - Number(endInput.value)) ? startInput : endInput);
+    grabOffset = clickedThumb ? event.clientX - clickedThumb.getBoundingClientRect()[clickedThumb === startInput ? "right" : "left"] : 0;
+    activeInput.focus({ preventScroll: true });
+    track.setPointerCapture(event.pointerId);
+    if (!clickedThumb) setYear(activeInput, year);
+    event.preventDefault();
+  });
+  track.addEventListener("pointermove", (event) => {
+    if (activeInput && track.hasPointerCapture(event.pointerId)) setYear(activeInput, yearAt(event.clientX - grabOffset));
+  });
+  track.addEventListener("pointerup", () => { activeInput = null; });
+  track.addEventListener("pointercancel", () => { activeInput = null; });
+  for (const input of [startInput, endInput]) {
+    input.addEventListener("keydown", (event) => {
+      const year = Number(input.value);
+      const change = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -5, PageUp: 5 }[event.key];
+      if (change === undefined && event.key !== "Home" && event.key !== "End") return;
+      event.preventDefault();
+      setYear(input, event.key === "Home" ? firstYear : event.key === "End" ? lastYear : year + change);
+    });
+  }
+  document.addEventListener("pointerdown", (event) => {
+    if (!filter.contains(event.target)) filter.open = false;
+  });
+  filter.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      filter.open = false;
+      filter.querySelector("summary").focus();
+    }
+  });
+  updateRange(false);
+}
+
 function getDropdownFilteredData() {
   const themeGroup = document.getElementById("category-filter").value;
   const theme = document.getElementById("sub-theme-filter").value;
+  const startYear = Number(document.getElementById("year-start").value);
+  const endYear = Number(document.getElementById("year-end").value);
   return allSetData
     .filter(
       (item) =>
         (themeGroup === "all" || item.theme_l1 === themeGroup) &&
-        (theme === "all" || item.theme_l2 === theme),
+        (theme === "all" || item.theme_l2 === theme) &&
+        item.year_released >= startYear &&
+        item.year_released <= endYear,
     )
     .sort(
       (a, b) =>
@@ -192,15 +333,21 @@ function averageFor(data, field) {
 
 function updateFilteredDashboard() {
   const data = getDropdownFilteredData();
-  document.getElementById("sets-released").textContent =
-    data.length.toLocaleString();
-  document.getElementById("average-pieces-per-us-big-mac").textContent =
-    averageFor(data, "ppbm_us").toFixed(1);
-  document.getElementById("average-pieces-per-pound").textContent = averageFor(
-    data,
-    "ppp",
-  ).toFixed(1);
-  drawLineChart(data, document.getElementById("chart-type-selector").value);
+  const metric = document.getElementById("chart-type-selector").value;
+  const formatAverage = (value) =>
+    value.toLocaleString("en-GB", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+  document.getElementById("sets-released").textContent = data.length.toLocaleString();
+  document.getElementById("average-pieces-per-set").textContent = formatAverage(
+    averageFor(data, "pieces"),
+  );
+  document.getElementById("selected-metric-label").textContent = pricePerMetrics[metric];
+  document.getElementById("average-selected-metric").textContent = formatAverage(
+    averageFor(data, metric),
+  );
+  drawLineChart(data, metric);
 }
 
 function median(values) {
@@ -257,6 +404,10 @@ function drawLineChart(data, metric) {
     }))
     .sort((a, b) => a.date - b.date);
   const dates = [...releaseData, ...annualData].map((item) => item.date);
+  const firstDate = d3.min(dates);
+  const lastDate = d3.max(dates);
+  const yearSpan = firstDate && lastDate ? lastDate.getFullYear() - firstDate.getFullYear() : 0;
+  const showMonths = yearSpan <= 1;
   const x = d3
     .scaleTime()
     .domain(d3.extent(dates.length ? dates : [new Date(2000, 0, 1)]))
@@ -292,8 +443,10 @@ function drawLineChart(data, metric) {
     .call(
       d3
         .axisBottom(x)
-        .ticks(Math.max(2, Math.floor(innerWidth / 100)))
-        .tickFormat(d3.timeFormat("%Y")),
+        .ticks(showMonths
+          ? Math.max(2, Math.floor(innerWidth / 100))
+          : d3.timeYear.every(Math.max(1, Math.ceil(yearSpan / Math.max(2, Math.floor(innerWidth / 100))))))
+        .tickFormat(d3.timeFormat(showMonths ? "%b %Y" : "%Y")),
     );
   plot
     .append("text")
@@ -382,6 +535,172 @@ function drawLineChart(data, metric) {
       .attr("stroke-width", 2.5);
     row.append("text").attr("x", 31).attr("y", 9).text(entry.label);
   });
+}
+
+function buildTopFiveAnnualPrices(data) {
+  const pricesByYear = new Map();
+  data.forEach((item) => {
+    const year = Number(item.year_released);
+    const price = Number(item.retail_gbp);
+    if (
+      !Number.isInteger(year) ||
+      item.retail_gbp === null ||
+      item.retail_gbp === "" ||
+      !Number.isFinite(price) ||
+      price <= 0
+    ) {
+      return;
+    }
+    if (!pricesByYear.has(year)) {
+      pricesByYear.set(year, []);
+    }
+    pricesByYear.get(year).push({
+      price,
+      setName: item.set_name,
+      setNumber: item.set_number,
+    });
+  });
+
+  return [...pricesByYear]
+    .map(([year, sets]) => {
+      const topSets = sets.sort((a, b) => b.price - a.price).slice(0, 5);
+      return {
+        year,
+        meanPrice: d3.mean(topSets, (item) => item.price),
+        topSets,
+      };
+    })
+    .sort((a, b) => a.year - b.year);
+}
+
+function setChartNotes(note, sentences) {
+  d3.select(note).selectAll("li")
+    .data(sentences)
+    .join("li")
+    .text((sentence) => sentence);
+}
+
+function drawTopFivePriceChart(data, bigMacData) {
+  const container = d3.select("#top-five-price-chart");
+  const note = document.getElementById("top-five-price-note");
+  const yearlyPrices = buildTopFiveAnnualPrices(data);
+  container.html("");
+  if (!yearlyPrices.length) {
+    setChartNotes(note, ["No listed UK prices are available for this chart."]);
+    return;
+  }
+
+  const width = Math.max(560, container.node().clientWidth);
+  const height = 390;
+  const margin = { top: 18, right: 67, bottom: 48, left: 67 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const x = d3.scaleBand()
+    .domain(yearlyPrices.map((item) => item.year))
+    .range([0, innerWidth])
+    .padding(0.25);
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(yearlyPrices, (item) => item.meanPrice) * 1.08])
+    .nice()
+    .range([innerHeight, 0]);
+  const bigMacByYear = new Map(bigMacData
+    .filter((item) => Number.isInteger(Number(item.year)) && Number(item.price_gbp) > 0)
+    .map((item) => [Number(item.year), item]));
+  const bigMacPrices = yearlyPrices
+    .filter((item) => bigMacByYear.has(item.year))
+    .map((item) => bigMacByYear.get(item.year));
+  const baseYear = yearlyPrices.find((item) => item.year === 2001);
+  const baseBigMac = bigMacByYear.get(2001);
+  const alignmentFactor = baseYear && baseBigMac
+    ? baseYear.meanPrice / Number(baseBigMac.price_gbp)
+    : null;
+  const bigMacY = alignmentFactor
+    ? d3.scaleLinear()
+      .domain([0, y.domain()[1] / alignmentFactor])
+      .range([innerHeight, 0])
+    : null;
+  const svg = container.append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-hidden", "true");
+  const plot = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  plot.append("g")
+    .attr("class", "grid")
+    .call(d3.axisLeft(y).ticks(5).tickSize(-innerWidth).tickFormat(""));
+  plot.append("g")
+    .attr("class", "axis")
+    .call(d3.axisLeft(y).ticks(5).tickFormat((value) => `£${d3.format(",")(value)}`));
+  if (bigMacY) {
+    plot.append("g")
+      .attr("class", "axis axis-big-mac")
+      .attr("transform", `translate(${innerWidth},0)`)
+      .call(d3.axisRight(bigMacY).ticks(5).tickFormat((value) => `£${d3.format("~g")(value)}`));
+  }
+  const tickEvery = Math.max(1, Math.ceil(yearlyPrices.length / Math.max(3, Math.floor(innerWidth / 75))));
+  const tickIndexes = yearlyPrices
+    .map((_item, index) => index)
+    .filter((index) => index % tickEvery === 0);
+  if (yearlyPrices.length - 1 - tickIndexes[tickIndexes.length - 1] < tickEvery) {
+    tickIndexes.pop();
+  }
+  tickIndexes.push(yearlyPrices.length - 1);
+  const tickYears = tickIndexes.map((index) => yearlyPrices[index].year);
+  plot.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).tickValues(tickYears).tickFormat(d3.format("d")));
+
+  plot.selectAll(".top-five-price-bar")
+    .data(yearlyPrices)
+    .join("rect")
+    .attr("class", "top-five-price-bar")
+    .attr("x", (item) => x(item.year))
+    .attr("y", (item) => y(item.meanPrice))
+    .attr("width", x.bandwidth())
+    .attr("height", (item) => innerHeight - y(item.meanPrice))
+    .on("mouseenter", (event, item) => {
+      const sets = item.topSets.map((set, index) =>
+        `${index + 1}. ${set.setName} (${set.setNumber}) — ${formatCurrency(set.price, "GBP")}`,
+      );
+      showTooltip(
+        event,
+        `${item.year} Top 5 mean: ${formatCurrency(item.meanPrice, "GBP")}\n${sets.join("\n")}`,
+      );
+    })
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+
+  if (bigMacY) {
+    const bigMacLine = d3.line()
+      .x((item) => x(Number(item.year)) + x.bandwidth() / 2)
+      .y((item) => bigMacY(Number(item.price_gbp)));
+    plot.append("path")
+      .datum(bigMacPrices)
+      .attr("class", "big-mac-price-line")
+      .attr("d", bigMacLine);
+    plot.selectAll(".big-mac-price-point")
+      .data(bigMacPrices)
+      .join("circle")
+      .attr("class", "big-mac-price-point")
+      .attr("cx", (item) => x(Number(item.year)) + x.bandwidth() / 2)
+      .attr("cy", (item) => bigMacY(Number(item.price_gbp)))
+      .attr("r", 4)
+      .on("mouseenter", (event, item) => showTooltip(
+        event,
+        `${item.year} UK Big Mac: ${formatCurrency(item.price_gbp, "GBP")}`,
+      ))
+      .on("mousemove", moveTooltip)
+      .on("mouseleave", hideTooltip);
+  }
+
+  setChartNotes(note, [
+    "Bars average the five highest listed UK set prices each year.",
+    bigMacY
+      ? "The Big Mac line uses that year’s first GBP observation."
+      : "Big Mac comparison unavailable: the 2001 GBP observation is missing.",
+  ]);
 }
 
 function parseDate(value) {
@@ -878,6 +1197,7 @@ function redrawCharts() {
     getDropdownFilteredData(),
     document.getElementById("chart-type-selector").value,
   );
+  drawTopFivePriceChart(allSetData, annualBigMacData);
   drawThemeScatter();
   if (selectedThemeForSubTheme) {
     drawSubThemeScatter(selectedThemeForSubTheme);
@@ -891,9 +1211,19 @@ function showTooltip(event, text) {
 }
 
 function moveTooltip(event) {
-  d3.select("#chart-tooltip")
-    .style("left", `${event.clientX + 12}px`)
-    .style("top", `${event.clientY + 12}px`);
+  const tooltip = d3.select("#chart-tooltip");
+  const { width, height } = tooltip.node().getBoundingClientRect();
+  let left = event.clientX + 12;
+  let top = event.clientY + 12;
+  if (left + width > window.innerWidth - 8) {
+    left = event.clientX - width - 12;
+  }
+  if (top + height > window.innerHeight - 8) {
+    top = event.clientY - height - 12;
+  }
+  tooltip
+    .style("left", `${Math.max(8, left)}px`)
+    .style("top", `${Math.max(8, top)}px`);
 }
 
 function hideTooltip() {

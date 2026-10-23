@@ -1,0 +1,91 @@
+{
+  "title": "How LEGO costs reaches the dashboard",
+  "eyebrow": "LEGO costs · repository map",
+  "question": "How does this repo turn LEGO set prices into the dashboard?",
+  "intro": "Follow the data from three CSV files through price calculations to the current dashboard. Click an area to inspect its parts, or use Next to follow the path.",
+  "subject": "Repository as inspected on 23 October 2026",
+  "takeaway": "The current dashboard is a static page backed by exported set data. Refreshing the source data requires running the database models and the JSON export again.",
+  "roles": [
+    {"id": "input", "name": "Source files", "about": "The CSV files checked into the project"},
+    {"id": "model", "name": "Data models", "about": "Queries that prepare and compare prices"},
+    {"id": "export", "name": "Export", "about": "A script that writes browser-readable data"},
+    {"id": "page", "name": "Dashboard", "about": "The web page and its charts"}
+  ],
+  "sections": [
+    {
+      "type": "glossary",
+      "id": "words",
+      "title": "A few useful words",
+      "items": [
+        {"word": "CSV", "meaning": "A plain text table. The project stores LEGO sets, Big Mac prices and stock index values in these files.", "role": "input"},
+        {"word": "dbt", "meaning": "A tool that runs the project's SQL queries in order and builds tables from their results.", "role": "model"},
+        {"word": "DuckDB", "meaning": "The database file that holds the source tables and the results of the queries.", "role": "model"},
+        {"word": "JSON", "meaning": "A text format that JavaScript can read. The export script writes the final tables in this format.", "role": "export"}
+      ]
+    },
+    {
+      "type": "map",
+      "id": "map",
+      "title": "The data path",
+      "intro": "Start at the source files, then follow the arrows down to the current website.",
+      "areas": [
+        {"id": "sources", "name": "Source files", "about": "Three checked-in tables provide set details, burger prices and stock index values."},
+        {"id": "models", "name": "Database models", "about": "Queries clean the source rows, match prices by date and calculate comparisons."},
+        {"id": "delivery", "name": "Exported data", "about": "A Python script copies the final database tables into JSON files."},
+        {"id": "site", "name": "Current website", "about": "The browser loads set data and draws interactive charts and a searchable table."}
+      ],
+      "rows": [["sources"], ["models"], ["delivery"], ["site"]],
+      "parts": [
+        {"id": "sets", "area": "sources", "name": "LEGO sets", "about": "This table lists sets, pieces, themes, release dates and prices in three currencies.", "role": "input", "file": "dbt_project/seeds/lego_sets.csv:1"},
+        {"id": "macs", "area": "sources", "name": "Big Mac prices", "about": "This table supplies burger prices that let the project compare LEGO costs across time and currencies.", "role": "input", "file": "dbt_project/seeds/big_mac_adjusted.csv:1"},
+        {"id": "stocks", "area": "sources", "name": "Stock index", "about": "This table supplies S&P 500 values for another way to compare set prices.", "role": "input", "file": "dbt_project/seeds/sp500_index.csv:1"},
+        {"id": "clean", "area": "models", "name": "Clean and match", "about": "The queries rename columns, fill some missing prices and attach the most recent earlier burger and stock values.", "role": "model", "file": "dbt_project/models/intermediate/int_lego__sp500_join.sql:1"},
+        {"id": "results", "area": "models", "name": "Final tables", "about": "One table has a row per set. The other has yearly medians for the price comparisons.", "role": "model", "file": "dbt_project/models/marts/full_output.sql:1"},
+        {"id": "json", "area": "delivery", "name": "JSON export", "about": "The script reads both final tables from DuckDB and writes JSON files into the website assets folder.", "role": "export", "file": "html_project/data_converter/duckdb_to_json.py:58"},
+        {"id": "browser", "area": "site", "name": "D3 dashboard", "about": "The page loads set data and calculates cards, time charts, theme bubbles and a searchable table.", "role": "page", "file": "html_project/script.js:70"},
+        {"id": "python", "area": "site", "name": "Earlier Dash app", "about": "This separate Python app reads an older database copy and draws Plotly charts. The repository describes it as largely abandoned.", "role": "page", "file": "python_project/app.py:10"}
+      ],
+      "links": [
+        {"id": "s1", "from": "sets", "to": "clean", "label": "set details", "role": "input"},
+        {"id": "s2", "from": "macs", "to": "clean", "label": "burger prices", "role": "input"},
+        {"id": "s3", "from": "stocks", "to": "clean", "label": "index values", "role": "input"},
+        {"id": "s4", "from": "clean", "to": "results", "label": "matched set rows", "role": "model"},
+        {"id": "s5", "from": "results", "to": "json", "label": "final table rows", "role": "export"},
+        {"id": "s6", "from": "json", "to": "browser", "label": "set data file", "role": "page"}
+      ],
+      "start": {"title": "The main idea", "body": "Data preparation happens before someone opens the page. The website reads the prepared file and responds to clicks in the browser."},
+      "tour": [
+        {"say": "The project starts with set details, Big Mac prices and stock index values in CSV files.", "parts": ["sets", "macs", "stocks"]},
+        {"say": "The database queries clean set fields and match each release with earlier price observations.", "parts": ["clean"], "links": ["s1", "s2", "s3"]},
+        {"say": "The final tables hold set comparisons and yearly median values.", "parts": ["results"], "links": ["s4"]},
+        {"say": "The export script copies both final tables into files the browser can read.", "parts": ["json"], "links": ["s5"]},
+        {"say": "The current dashboard loads the set file and draws charts and a searchable table.", "parts": ["browser"], "links": ["s6"]}
+      ]
+    },
+    {
+      "type": "flow",
+      "id": "flow",
+      "title": "What happens on a data refresh",
+      "intro": "The build steps happen before a visitor opens the website.",
+      "lanes": [
+        {"id": "csv", "name": "CSV files", "role": "input"},
+        {"id": "dbt", "name": "dbt", "role": "model"},
+        {"id": "db", "name": "DuckDB", "role": "model"},
+        {"id": "py", "name": "Export", "role": "export"},
+        {"id": "web", "name": "Website", "role": "page"}
+      ],
+      "steps": [
+        {"from": "csv", "to": "db", "label": "source rows", "say": "A seed run loads the three CSV tables into DuckDB.", "phase": "Build", "state": {"database": "Three source tables loaded"}},
+        {"from": "dbt", "to": "db", "label": "cleaned set rows", "say": "The first queries rename set fields, parse release dates and fill some missing prices."},
+        {"from": "dbt", "to": "db", "label": "matched price rows", "say": "The next queries attach the latest Big Mac and stock values dated on or before each release."},
+        {"from": "dbt", "to": "db", "label": "final results", "say": "The final queries calculate pieces per currency, per Big Mac and per stock index value.", "state": {"database": "Per-set results and yearly medians ready"}},
+        {"from": "db", "to": "py", "label": "two final tables", "say": "The export script reads the per-set table and the yearly median table.", "phase": "Export"},
+        {"from": "py", "to": "web", "label": "two JSON files", "say": "The script writes both tables as JSON files in the website assets folder.", "state": {"website files": "Per-set and yearly JSON ready"}},
+        {"from": "web", "to": "web", "label": "load set data", "say": "When the page opens, JavaScript loads the per-set JSON file.", "phase": "Visit", "screen": "<div class=\"scr-box\">LEGO Set Cost Dashboard</div>"},
+        {"from": "web", "to": "web", "label": "draw charts", "say": "JavaScript calculates summary numbers and draws the time chart, theme bubbles and raw data table.", "screen": "<div class=\"scr-col\"><div class=\"scr-box\">Key metrics and time chart</div><div class=\"scr-box\">Theme bubbles and raw data</div></div>"},
+        {"from": "web", "to": "web", "label": "respond to filters", "say": "Changing a theme or price measure redraws the relevant chart and summary values."}
+      ]
+    }
+  ],
+  "footer": "The older Python dashboard and Chart.js page remain in the repository as earlier versions."
+}

@@ -3,49 +3,107 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="assets/brick-mark.svg?v=2" />
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/style.css?v=20261016" />
-    <title>LEGO Set Cost Dashboard — D3</title>
+    <link rel="stylesheet" href="assets/style.css?v=20261023aa" />
+    <title>Is LEGO Really Getting More Expensive?</title>
   </head>
   <body>
-    <main class="container d3-dashboard">
-      <h1>LEGO Set Cost Dashboard</h1>
-
-      <h2>Key Metrics</h2>
-      <div id="key-metrics" class="row text-center my-4">
-        <div class="col-md-4">
-          <h4>Number of Sets Released</h4>
-          <p id="sets-released">0</p>
-        </div>
-        <div class="col-md-4">
-          <h4>Average Pieces per US Big Mac</h4>
-          <p id="average-pieces-per-us-big-mac">0</p>
-        </div>
-        <div class="col-md-4">
-          <h4>Average Pieces per Pound</h4>
-          <p id="average-pieces-per-pound">0</p>
-        </div>
+    <header class="site-header">
+      <div class="page-width header-inner">
+        <a
+          class="site-brand"
+          href="#top"
+          aria-label="LEGO cost study, back to top"
+        >
+          <img
+            class="brand-mark"
+            src="assets/brick-mark.svg?v=2"
+            alt=""
+            aria-hidden="true"
+          />
+          <span>THE LEGO COST STUDY</span>
+        </a>
+        <nav class="site-nav" aria-label="Page sections">
+          <a href="#price-trend">The trend</a>
+          <a href="#possible-reasons">Possible reasons</a>
+          <a href="#explore">Explore the sets</a>
+        </nav>
       </div>
+    </header>
 
-      <section class="my-4" aria-label="Price per metrics over time">
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <label for="category-filter">Theme Group</label>
+    <main id="top" class="page-width d3-dashboard">
+      <section
+        id="the-question"
+        class="story-section opening-section"
+        aria-labelledby="page-title"
+      >
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">
+              <span class="eyebrow-line"></span> THE QUESTION
+            </p>
+            <h1 id="page-title">
+              Is LEGO really getting <em>more expensive?</em>
+            </h1>
+            <p class="hero-lead">
+              We all seem to think so. I decided to look at the sets, the prices
+              and the pieces to find out.
+            </p>
+            <p class="hero-detail">
+              Follow the numbers over time, look at what might be driving them,
+              then explore the sets for yourself.
+            </p>
+            <a class="text-link" href="#price-trend"
+              >Start with the trend <span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="hero-brick brick-back">
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <div class="hero-brick brick-front">
+              <i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="price-trend"
+        class="story-section chart-panel trend-panel"
+        aria-labelledby="trend-heading"
+      >
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">
+              <span class="eyebrow-line"></span> 01 / THE TREND
+            </p>
+            <h2 id="trend-heading">How has the value changed?</h2>
+            <p>
+              Choose a measure and a theme to see how much LEGO you get for your
+              money.
+            </p>
+          </div>
+        </div>
+        <div class="filter-grid">
+          <div class="filter-field">
+            <label for="category-filter">Theme group</label>
             <select id="category-filter" class="form-control">
               <option value="all">All Theme Groups</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="filter-field">
             <label for="sub-theme-filter">Theme</label>
             <select id="sub-theme-filter" class="form-control">
               <option value="all">All Themes</option>
             </select>
           </div>
-          <div class="col-md-4">
-            <label for="chart-type-selector">Select Chart:</label>
+          <div class="filter-field">
+            <label for="chart-type-selector">Compare by</label>
             <select id="chart-type-selector" class="form-control">
               <option value="ppbm_us">Pieces per Big Mac (US)</option>
               <option value="ppbm_gb">Pieces per Big Mac (UK)</option>
@@ -56,6 +114,77 @@
               <option value="ppe">Pieces per Euro</option>
             </select>
           </div>
+          <div class="filter-field year-filter-field">
+            <span id="year-filter-label" class="filter-label"
+              >Release years</span
+            >
+            <details id="year-filter" class="year-filter">
+              <summary aria-labelledby="year-filter-label year-filter-value">
+                <span id="year-filter-value">2001–2026</span>
+              </summary>
+              <div class="year-filter-menu">
+                <div class="year-range-values">
+                  <span
+                    >Beginning <output id="year-start-value">2001</output></span
+                  >
+                  <span>End <output id="year-end-value">2026</output></span>
+                </div>
+                <div id="year-range-track" class="year-range-track">
+                  <div class="year-range-selected"></div>
+                  <button
+                    id="year-start"
+                    class="year-range-thumb"
+                    type="button"
+                    role="slider"
+                    aria-label="Beginning year"
+                    aria-orientation="horizontal"
+                    aria-valuemin="2001"
+                    aria-valuemax="2026"
+                    aria-valuenow="2001"
+                  ></button>
+                  <button
+                    id="year-end"
+                    class="year-range-thumb"
+                    type="button"
+                    role="slider"
+                    aria-label="End year"
+                    aria-orientation="horizontal"
+                    aria-valuemin="2001"
+                    aria-valuemax="2026"
+                    aria-valuenow="2026"
+                  ></button>
+                </div>
+                <div class="year-range-bounds">
+                  <span id="year-min-label">2001</span
+                  ><span id="year-max-label">2026</span>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+        <div
+          id="key-metrics"
+          class="metrics-grid"
+          aria-label="Metrics for the selected sets"
+        >
+          <div class="metric-card">
+            <span class="metric-index">01</span>
+            <p id="sets-released" class="metric-value">0</p>
+            <h3>Sets released</h3>
+            <p class="metric-note">In the current selection</p>
+          </div>
+          <div class="metric-card">
+            <span class="metric-index">02</span>
+            <p id="average-pieces-per-set" class="metric-value">0</p>
+            <h3>Pieces per set</h3>
+            <p class="metric-note">Average across selected sets</p>
+          </div>
+          <div class="metric-card">
+            <span class="metric-index">03</span>
+            <p id="average-selected-metric" class="metric-value">0</p>
+            <h3 id="selected-metric-label">Pieces per Big Mac (US)</h3>
+            <p class="metric-note">Average across selected sets</p>
+          </div>
         </div>
         <div
           id="line-chart"
@@ -63,96 +192,284 @@
           role="img"
           aria-label="Price per metric by release date and annual median"
         ></div>
-      </section>
-
-      <p id="data-status" class="text-danger" role="alert"></p>
-
-      <section class="my-4" aria-labelledby="theme-scatter-heading">
-        <h3 id="theme-scatter-heading">
-          Typical Set Size and UK Price by Theme Group
-        </h3>
-        <div
-          id="theme-scatter"
-          class="d3-chart d3-scatter"
-          role="img"
-          aria-label="Median UK set price and median piece count by theme group, sized by number of sets"
-        ></div>
+        <p class="chart-caption">
+          <span class="caption-key"></span>
+          Each pale point is the average for a release date. The darker line
+          follows the median set value each year.
+        </p>
+        <p id="data-status" class="data-status" role="alert"></p>
       </section>
 
       <section
-        id="sub-theme-chart-section"
-        class="my-4"
-        aria-labelledby="sub-theme-chart-heading"
-        hidden
+        id="possible-reasons"
+        class="story-section reasons-section"
+        aria-labelledby="reasons-heading"
       >
-        <div class="d-flex justify-content-between align-items-center">
-          <h3 id="sub-theme-chart-heading">
-            Typical Set Size and UK Price by Theme
-          </h3>
+        <div class="section-heading reasons-heading">
+          <div>
+            <p class="eyebrow">
+              <span class="eyebrow-line"></span> 02 / POSSIBLE REASONS
+            </p>
+            <h2 id="reasons-heading">The numbers are only the beginning.</h2>
+            <p class="section-lead">
+              So, in that case, why do we all think it is? Let's take a look at
+              some possible reasons.
+            </p>
+          </div>
+        </div>
+        <div class="question-grid" role="tablist" aria-label="Possible reasons">
           <button
-            id="close-sub-theme-chart"
-            class="btn btn-outline-secondary btn-sm"
+            id="top-end-tab"
+            class="question-card"
             type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="top-end-panel"
+            tabindex="0"
           >
-            Close
+            <span class="question-icon icon-price-tag" aria-hidden="true">
+              <svg viewBox="0 0 48 42" focusable="false">
+                <path d="M4 7h24l15 14-15 14H4z"></path>
+                <text x="13" y="28">£</text>
+              </svg>
+            </span>
+            <span class="question-kicker">AT THE TOP END</span>
+            <span class="question-title">What do the priciest sets cost?</span>
+          </button>
+          <button
+            id="set-size-tab"
+            class="question-card"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="set-size-panel"
+            tabindex="-1"
+          >
+            <span class="question-icon icon-size" aria-hidden="true"
+              ><i></i><i></i><i></i
+            ></span>
+            <span class="question-kicker">SET SIZE</span>
+            <span class="question-title">Are newer sets getting bigger?</span>
+          </button>
+          <button
+            id="theme-mix-tab"
+            class="question-card"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="theme-mix-panel"
+            tabindex="-1"
+          >
+            <span class="question-icon icon-themes" aria-hidden="true"
+              ><i></i><i></i><i></i
+            ></span>
+            <span class="question-kicker">THEME MIX</span>
+            <span class="question-title"
+              >Are we buying different kinds of sets?</span
+            >
           </button>
         </div>
-        <div
-          id="sub-theme-scatter"
-          class="d3-chart d3-scatter"
-          role="img"
-          aria-label="Median UK set price and median piece count by theme, sized by number of sets"
-        ></div>
-      </section>
-
-      <section id="raw-data" class="my-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <h3 id="raw-data-heading">Raw Data</h3>
-          <button
-            id="clear-scatter-selection"
-            class="btn btn-outline-secondary btn-sm"
-            type="button"
+        <div id="reason-charts" class="reason-charts">
+          <section
+            id="set-size-panel"
+            class="reason-chart-card reason-chart-placeholder"
+            role="tabpanel"
+            aria-labelledby="set-size-tab"
+            tabindex="0"
             hidden
           >
-            Clear scatter selection
-          </button>
-        </div>
-        <div class="d3-table-controls">
-          <label>
-            Show
-            <select id="table-page-size" aria-label="Rows per page">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            entries
-          </label>
-          <label>
-            Search:
-            <input id="table-search" type="search" />
-          </label>
-        </div>
-        <div class="d3-table-scroll">
-          <table id="data-table" class="table table-striped table-bordered">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="d3-table-footer">
-          <span id="table-info" role="status"></span>
-          <nav aria-label="Raw data pages">
-            <button id="table-previous" type="button">Previous</button>
-            <span id="table-page-list"></span>
-            <button id="table-next" type="button">Next</button>
-          </nav>
+            <p class="question-kicker">SET SIZE</p>
+            <h3>Are newer sets getting bigger?</h3>
+            <p>Chart coming soon.</p>
+          </section>
+          <section
+            id="theme-mix-panel"
+            class="reason-chart-card reason-chart-placeholder"
+            role="tabpanel"
+            aria-labelledby="theme-mix-tab"
+            tabindex="0"
+            hidden
+          >
+            <p class="question-kicker">THEME MIX</p>
+            <h3>Are we buying different kinds of sets?</h3>
+            <p>Chart coming soon.</p>
+          </section>
+          <section
+            id="top-end-panel"
+            class="reason-chart-card"
+            role="tabpanel"
+            aria-labelledby="top-end-tab"
+            tabindex="0"
+          >
+            <div class="reason-chart-heading">
+              <div>
+                <p class="question-kicker">AT THE TOP END</p>
+                <h3 id="top-five-price-heading">
+                  What do the priciest sets cost?
+                </h3>
+                <p>
+                  Here's an obvious one to look at, so let's take the average
+                  cost of the five most expensive sets released each year, and,
+                  oh boy. Although they've stayed largely steady for the past
+                  few years, they rocketed up from 2015 to 2021 and haven't
+                  really come down since (and they left the Big Mac behind a
+                  long time ago).
+                </p>
+              </div>
+            </div>
+            <div class="price-comparison-legend" aria-hidden="true">
+              <span><i class="legend-sets"></i> Top-five set mean</span>
+              <span class="legend-mac-entry"
+                >Big Mac price <i class="legend-mac"></i
+              ></span>
+            </div>
+            <div
+              id="top-five-price-chart"
+              class="d3-chart"
+              role="img"
+              aria-label="Mean UK list price of the five most expensive LEGO sets released each year, with annual UK Big Mac prices on a second linear axis"
+            ></div>
+            <ul id="top-five-price-note" class="reason-chart-note"></ul>
+          </section>
         </div>
       </section>
+
+      <section
+        id="explore"
+        class="story-section explore-section"
+        aria-labelledby="explore-heading"
+      >
+        <div class="section-heading explore-heading">
+          <div>
+            <p class="eyebrow">
+              <span class="eyebrow-line"></span> 03 / EXPLORE THE SETS
+            </p>
+            <h2 id="explore-heading">Find your own story in the sets.</h2>
+            <p class="section-lead">
+              Compare themes, open one up, then browse the individual sets
+              behind the chart.
+            </p>
+          </div>
+        </div>
+        <section
+          class="chart-panel scatter-panel"
+          aria-labelledby="theme-scatter-heading"
+        >
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">THEME EXPLORER</p>
+              <h3 id="theme-scatter-heading">
+                Typical set size and UK price by theme group
+              </h3>
+              <p>
+                Each bubble is a theme group. Larger bubbles contain more sets;
+                select one to see its themes.
+              </p>
+            </div>
+          </div>
+          <div class="chart-viewport">
+            <div
+              id="theme-scatter"
+              class="d3-chart d3-scatter"
+              role="img"
+              aria-label="Median UK set price and median piece count by theme group, sized by number of sets"
+            ></div>
+          </div>
+        </section>
+        <section
+          id="sub-theme-chart-section"
+          class="chart-panel scatter-panel detail-panel"
+          aria-labelledby="sub-theme-chart-heading"
+          hidden
+        >
+          <div class="panel-heading panel-heading-with-action">
+            <div>
+              <p class="eyebrow">A CLOSER LOOK</p>
+              <h3 id="sub-theme-chart-heading">
+                Typical Set Size and UK Price by Theme
+              </h3>
+            </div>
+            <button
+              id="close-sub-theme-chart"
+              class="outline-button"
+              type="button"
+            >
+              Close detail
+            </button>
+          </div>
+          <div class="chart-viewport">
+            <div
+              id="sub-theme-scatter"
+              class="d3-chart d3-scatter"
+              role="img"
+              aria-label="Median UK set price and median piece count by theme, sized by number of sets"
+            ></div>
+          </div>
+        </section>
+        <section
+          id="raw-data"
+          class="chart-panel table-panel"
+          aria-labelledby="raw-data-heading"
+        >
+          <div class="panel-heading panel-heading-with-action">
+            <div>
+              <p class="eyebrow">THE SET LIST</p>
+              <h3 id="raw-data-heading">Raw Data</h3>
+              <p>Search, sort and page through the individual sets.</p>
+            </div>
+            <button
+              id="clear-scatter-selection"
+              class="outline-button"
+              type="button"
+              hidden
+            >
+              Clear selection
+            </button>
+          </div>
+          <div class="d3-table-controls">
+            <label
+              >Show
+              <select id="table-page-size" aria-label="Rows per page">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              entries
+            </label>
+            <label class="table-search-label"
+              >Search sets
+              <input
+                id="table-search"
+                type="search"
+                placeholder="Name, number or theme"
+              />
+            </label>
+          </div>
+          <div class="d3-table-scroll">
+            <table id="data-table" class="table table-striped table-bordered">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="d3-table-footer">
+            <span id="table-info" role="status"></span>
+            <nav aria-label="Raw data pages">
+              <button id="table-previous" type="button">Previous</button>
+              <span id="table-page-list"></span>
+              <button id="table-next" type="button">Next</button>
+            </nav>
+          </div>
+        </section>
+      </section>
     </main>
-
+    <footer class="site-footer">
+      <div class="page-width">
+        A closer look at what LEGO sets cost, one brick at a time.
+      </div>
+    </footer>
     <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
-
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=20261023r"></script>
   </body>
 </html>

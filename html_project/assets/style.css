@@ -111,7 +111,8 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .question-card[aria-selected="true"] .question-kicker { color: var(--coral-dark); }
 .question-icon { width: 47px; height: 42px; display: flex; align-items: end; gap: 4px; margin-bottom: 24px; }
 .question-icon i { display: block; width: 12px; border-radius: 3px 3px 0 0; background: #6a9a96; }
-.icon-size i:nth-child(1) { height: 15px; }.icon-size i:nth-child(2) { height: 25px; }.icon-size i:nth-child(3) { height: 37px; }
+.icon-death-star { background: var(--teal); -webkit-mask: url("death-star-svgrepo-com.svg") center / 42px 42px no-repeat; mask: url("death-star-svgrepo-com.svg") center / 42px 42px no-repeat; }
+.question-card[aria-selected="true"] .icon-death-star { background: var(--coral); }
 .icon-themes i { width: 14px; height: 14px; border-radius: 4px; transform: rotate(-12deg); }.icon-themes i:nth-child(2) { background: var(--coral); transform: rotate(10deg) translateY(-9px); }.icon-themes i:nth-child(3) { background: #e2ad69; transform: rotate(-8deg) translateY(-2px); }
 .icon-price-tag { align-items: center; }
 .icon-price-tag svg { display: block; width: 47px; height: 42px; }
@@ -142,6 +143,32 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .d3-chart .big-mac-price-point { fill: var(--teal); stroke: #fff; stroke-width: 1; }
 .d3-chart .axis-big-mac path, .d3-chart .axis-big-mac line { stroke: var(--teal); }
 .d3-chart .axis-big-mac text { fill: var(--teal); }
+.star-wars-legend { display: flex; flex-wrap: wrap; gap: 12px 26px; margin: 24px 8px 10px; color: #40565d; font-size: .82rem; font-weight: 650; }
+.star-wars-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.star-wars-legend i { display: inline-block; flex: none; }
+.legend-star-wars-range { width: 19px; height: 11px; background: rgba(36,110,120,.19); }
+.legend-star-wars-median { width: 23px; border-top: 3px solid var(--coral); }
+#star-wars-value-chart { min-height: 390px; overflow-x: auto; }
+#star-wars-value-chart svg { width: max(100%, 640px); }
+.d3-chart .star-wars-range { fill: rgba(36,110,120,.19); }
+.d3-chart .star-wars-median-line { fill: none; stroke: var(--coral); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.d3-chart .star-wars-median-point { fill: var(--coral); stroke: #fff; stroke-width: 1.5; }
+.d3-chart .star-wars-hit-area { fill: transparent; cursor: crosshair; }
+.top-ten-section { margin-top: 36px; padding-top: 32px; border-top: 1px solid var(--line); }
+.top-ten-section h4 { margin: 0 0 7px; font-family: Georgia, serif; font-size: clamp(1.4rem, 2.2vw, 1.9rem); font-weight: 600; letter-spacing: -.03em; }
+.top-ten-section > p { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
+.top-ten-legend { display: flex; flex-wrap: wrap; gap: 12px 25px; margin: 22px 8px 12px; color: #40565d; font-size: .82rem; font-weight: 650; }
+.top-ten-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.top-ten-legend i { display: inline-block; width: 13px; height: 13px; border-radius: 2px; }
+.legend-top-ten-star-wars { background: var(--coral); }
+.legend-top-ten-other { background: var(--teal); }
+#top-ten-price-chart { min-height: 520px; overflow-x: auto; }
+#top-ten-price-chart svg { width: max(100%, 760px); }
+.d3-chart .top-ten-bar.star-wars { fill: var(--coral); }
+.d3-chart .top-ten-bar.other-theme { fill: var(--teal); }
+.d3-chart .top-ten-bar:hover { filter: brightness(.9); }
+.d3-chart .top-ten-price-label { fill: var(--ink); font-size: 12px; font-weight: 700; }
+.d3-chart .top-ten-year-axis text { fill: var(--ink); font-size: 12px; font-weight: 650; }
 .reason-chart-note { margin: 12px 0 0; padding: 15px 0 0 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; line-height: 1.55; }
 .reason-chart-note li + li { margin-top: 4px; }
 

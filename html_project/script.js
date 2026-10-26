@@ -158,6 +158,9 @@ function initializeReasonTabs() {
     });
     if (selectedTab.id === "top-end-tab") {
       drawTopFivePriceChart(allSetData, annualBigMacData);
+    } else if (selectedTab.id === "star-wars-tab") {
+      drawStarWarsValueChart(allSetData);
+      drawTopTenPriceChart(allSetData);
     }
   };
 
@@ -703,6 +706,229 @@ function drawTopFivePriceChart(data, bigMacData) {
   ]);
 }
 
+function drawStarWarsValueChart(data) {
+  const container = d3.select("#star-wars-value-chart");
+  const annualValues = d3.rollups(
+    data.filter((item) =>
+      item.theme_l2 === "Star Wars" &&
+      Number.isInteger(Number(item.year_released)) &&
+      item.ppp !== null &&
+      item.ppp !== "" &&
+      Number.isFinite(Number(item.ppp)) &&
+      Number(item.ppp) > 0,
+    ),
+    (sets) => {
+      const values = sets.map((item) => Number(item.ppp)).sort((a, b) => a - b);
+      return {
+        count: values.length,
+        lowerQuartile: d3.quantileSorted(values, 0.25),
+        median: d3.quantileSorted(values, 0.5),
+        upperQuartile: d3.quantileSorted(values, 0.75),
+      };
+    },
+    (item) => Number(item.year_released),
+  )
+    .map(([year, summary]) => ({ year, ...summary }))
+    .sort((a, b) => a.year - b.year);
+
+  container.html("");
+  if (!annualValues.length) {
+    container.text("No Star Wars sets with pieces-per-pound values are available.");
+    return;
+  }
+
+  const width = Math.max(640, container.node().clientWidth);
+  const height = 390;
+  const margin = { top: 18, right: 28, bottom: 48, left: 67 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const x = d3.scalePoint()
+    .domain(annualValues.map((item) => item.year))
+    .range([0, innerWidth])
+    .padding(0.35);
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(annualValues, (item) => item.upperQuartile) * 1.1])
+    .nice()
+    .range([innerHeight, 0]);
+  const svg = container.append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-hidden", "true");
+  const plot = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+  svg.append("text")
+    .attr("class", "axis-label")
+    .attr("x", margin.left)
+    .attr("y", 13)
+    .text("Pieces per £");
+
+  plot.append("g")
+    .attr("class", "grid")
+    .call(d3.axisLeft(y).ticks(5).tickSize(-innerWidth).tickFormat(""));
+  plot.append("g")
+    .attr("class", "axis")
+    .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format("~g")));
+  const tickEvery = Math.max(1, Math.ceil(annualValues.length / Math.max(3, Math.floor(innerWidth / 85))));
+  const tickYears = annualValues
+    .filter((_item, index) => index % tickEvery === 0)
+    .map((item) => item.year);
+  const lastYear = annualValues[annualValues.length - 1].year;
+  if (!tickYears.includes(lastYear)) {
+    tickYears.push(lastYear);
+  }
+  plot.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).tickValues(tickYears).tickFormat(d3.format("d")));
+
+  plot.append("path")
+    .datum(annualValues)
+    .attr("class", "star-wars-range")
+    .attr("d", d3.area()
+      .x((item) => x(item.year))
+      .y0((item) => y(item.lowerQuartile))
+      .y1((item) => y(item.upperQuartile)));
+  plot.append("path")
+    .datum(annualValues)
+    .attr("class", "star-wars-median-line")
+    .attr("d", d3.line()
+      .x((item) => x(item.year))
+      .y((item) => y(item.median)));
+  plot.selectAll(".star-wars-median-point")
+    .data(annualValues)
+    .join("circle")
+    .attr("class", "star-wars-median-point")
+    .attr("cx", (item) => x(item.year))
+    .attr("cy", (item) => y(item.median))
+    .attr("r", 4);
+  plot.selectAll(".star-wars-hit-area")
+    .data(annualValues)
+    .join("rect")
+    .attr("class", "star-wars-hit-area")
+    .attr("x", (item) => x(item.year) - x.step() / 2)
+    .attr("width", x.step())
+    .attr("height", innerHeight)
+    .on("mouseenter", (event, item) => showTooltip(
+      event,
+      `${item.year} Star Wars (${item.count} sets)\nMedian: ${item.median.toFixed(1)} pieces per £\nMiddle 50%: ${item.lowerQuartile.toFixed(1)}–${item.upperQuartile.toFixed(1)} pieces per £`,
+    ))
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+}
+
+function drawTopTenPriceChart(data) {
+  const container = d3.select("#top-ten-price-chart");
+  const pricedSets = data
+    .filter((item) =>
+      item.retail_gbp !== null &&
+      item.retail_gbp !== "" &&
+      Number.isFinite(Number(item.retail_gbp)) &&
+      Number(item.retail_gbp) > 0 &&
+      Number.isInteger(Number(item.year_released)),
+    )
+    .map((item) => ({ ...item, price: Number(item.retail_gbp) }));
+
+  container.html("");
+  if (!pricedSets.length) {
+    container.text("No listed UK prices are available for this chart.");
+    return;
+  }
+
+  const byYear = d3.group(pricedSets, (item) => Number(item.year_released));
+  const latestYear = d3.max(pricedSets, (item) => Number(item.year_released));
+  const yearlyTotals = d3.range(latestYear, latestYear - 10, -1)
+    .map((year) => {
+      const topSets = [...(byYear.get(year) || [])]
+        .sort((a, b) =>
+          b.price - a.price || String(a.set_number).localeCompare(String(b.set_number)),
+        )
+        .slice(0, 10);
+      const starWarsSets = topSets.filter((item) => item.theme_l2 === "Star Wars");
+      const otherSets = topSets.filter((item) => item.theme_l2 !== "Star Wars");
+      const starWarsTotal = d3.sum(starWarsSets, (item) => item.price);
+      const otherTotal = d3.sum(otherSets, (item) => item.price);
+      return {
+        year,
+        count: topSets.length,
+        starWarsCount: starWarsSets.length,
+        starWarsTotal,
+        otherTotal,
+        total: starWarsTotal + otherTotal,
+      };
+    });
+
+  const width = Math.max(760, container.node().clientWidth);
+  const height = 520;
+  const margin = { top: 16, right: 90, bottom: 48, left: 56 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(yearlyTotals, (item) => item.total) * 1.07])
+    .nice()
+    .range([0, innerWidth]);
+  const y = d3.scaleBand()
+    .domain(yearlyTotals.map((item) => item.year))
+    .range([0, innerHeight])
+    .padding(0.2);
+  const svg = container.append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-hidden", "true");
+  const plot = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  plot.append("g")
+    .attr("class", "grid")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).ticks(5).tickSize(-innerHeight).tickFormat(""))
+    .select(".domain")
+    .remove();
+  plot.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat((value) => `£${d3.format(",")(value)}`));
+  plot.append("g")
+    .attr("class", "axis top-ten-year-axis")
+    .call(d3.axisLeft(y).tickSize(0).tickPadding(12).tickFormat(d3.format("d")))
+    .select(".domain")
+    .remove();
+
+  const showYearTooltip = (event, item) => showTooltip(
+    event,
+    `${item.year} top ${item.count} total: ${formatCurrency(item.total, "GBP")}\nStar Wars: ${formatCurrency(item.starWarsTotal, "GBP")} (${item.starWarsCount} ${item.starWarsCount === 1 ? "set" : "sets"})\nOther themes: ${formatCurrency(item.otherTotal, "GBP")} (${item.count - item.starWarsCount} ${item.count - item.starWarsCount === 1 ? "set" : "sets"})`,
+  );
+  plot.selectAll(".top-ten-bar.star-wars")
+    .data(yearlyTotals)
+    .join("rect")
+    .attr("class", "top-ten-bar star-wars")
+    .attr("x", 0)
+    .attr("y", (item) => y(item.year))
+    .attr("width", (item) => x(item.starWarsTotal))
+    .attr("height", y.bandwidth())
+    .on("mouseenter", showYearTooltip)
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+  plot.selectAll(".top-ten-bar.other-theme")
+    .data(yearlyTotals)
+    .join("rect")
+    .attr("class", "top-ten-bar other-theme")
+    .attr("x", (item) => x(item.starWarsTotal))
+    .attr("y", (item) => y(item.year))
+    .attr("width", (item) => x(item.total) - x(item.starWarsTotal))
+    .attr("height", y.bandwidth())
+    .on("mouseenter", showYearTooltip)
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+  plot.selectAll(".top-ten-price-label")
+    .data(yearlyTotals)
+    .join("text")
+    .attr("class", "top-ten-price-label")
+    .attr("x", (item) => x(item.total) + 8)
+    .attr("y", (item) => y(item.year) + y.bandwidth() / 2)
+    .attr("dy", ".35em")
+    .text((item) => formatCurrency(item.total, "GBP"));
+}
+
 function parseDate(value) {
   const parsed = new Date(`${value}T00:00:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
@@ -1198,6 +1424,10 @@ function redrawCharts() {
     document.getElementById("chart-type-selector").value,
   );
   drawTopFivePriceChart(allSetData, annualBigMacData);
+  if (!document.getElementById("star-wars-panel").hidden) {
+    drawStarWarsValueChart(allSetData);
+    drawTopTenPriceChart(allSetData);
+  }
   drawThemeScatter();
   if (selectedThemeForSubTheme) {
     drawSubThemeScatter(selectedThemeForSubTheme);

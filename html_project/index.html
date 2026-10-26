@@ -8,7 +8,7 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/style.css?v=20261023aa" />
+    <link rel="stylesheet" href="assets/style.css?v=20261026g" />
     <title>Is LEGO Really Getting More Expensive?</title>
   </head>
   <body>
@@ -237,19 +237,22 @@
             <span class="question-title">What do the priciest sets cost?</span>
           </button>
           <button
-            id="set-size-tab"
+            id="star-wars-tab"
             class="question-card"
             type="button"
             role="tab"
             aria-selected="false"
-            aria-controls="set-size-panel"
+            aria-controls="star-wars-panel"
             tabindex="-1"
           >
-            <span class="question-icon icon-size" aria-hidden="true"
-              ><i></i><i></i><i></i
+            <span
+              class="question-icon icon-death-star"
+              aria-hidden="true"
             ></span>
-            <span class="question-kicker">SET SIZE</span>
-            <span class="question-title">Are newer sets getting bigger?</span>
+            <span class="question-kicker">A THEME FAR FAR AWAY</span>
+            <span class="question-title"
+              >What about the most popular theme?</span
+            >
           </button>
           <button
             id="theme-mix-tab"
@@ -271,16 +274,59 @@
         </div>
         <div id="reason-charts" class="reason-charts">
           <section
-            id="set-size-panel"
-            class="reason-chart-card reason-chart-placeholder"
+            id="star-wars-panel"
+            class="reason-chart-card"
             role="tabpanel"
-            aria-labelledby="set-size-tab"
+            aria-labelledby="star-wars-tab"
             tabindex="0"
             hidden
           >
-            <p class="question-kicker">SET SIZE</p>
-            <h3>Are newer sets getting bigger?</h3>
-            <p>Chart coming soon.</p>
+            <div class="reason-chart-heading">
+              <div>
+                <p class="question-kicker">A THEME FAR FAR AWAY</p>
+                <h3 id="star-wars-value-heading">
+                  What about the most popular theme?
+                </h3>
+                <p>
+                  In the past 25 years, just one licensed theme has had sets
+                  released every single year. Interestingly enough, for our
+                  analysis, it's also one of the very few themes where the
+                  absolute value of piece per pound (not adjusting for
+                  inflation), has, after staying steady for most of the 2010s
+                  decreased over the past five years.
+                </p>
+              </div>
+            </div>
+            <div class="star-wars-legend" aria-hidden="true">
+              <span
+                ><i class="legend-star-wars-range"></i> Middle 50% of sets</span
+              >
+              <span><i class="legend-star-wars-median"></i> Annual median</span>
+            </div>
+            <div
+              id="star-wars-value-chart"
+              class="d3-chart"
+              role="img"
+              aria-label="Annual median and middle 50 percent of pieces per pound for LEGO Star Wars sets"
+            ></div>
+            <div class="top-ten-section">
+              <h4 id="top-ten-price-heading">The priciest ten, year by year</h4>
+              <p>
+                The fact that Star Wars sets consistently appear in the top ten
+                most expensive sets every year, meaning those high prices
+                regularly get a lot of attention, also doesn't help.
+              </p>
+              <div class="top-ten-legend" aria-hidden="true">
+                <span><i class="legend-top-ten-star-wars"></i> Star Wars</span>
+                <span><i class="legend-top-ten-other"></i> Other themes</span>
+              </div>
+              <div
+                id="top-ten-price-chart"
+                class="d3-chart"
+                role="img"
+                aria-label="Combined UK list price of the ten most expensive LEGO sets in each of the latest ten years, split between Star Wars and other themes"
+              ></div>
+            </div>
           </section>
           <section
             id="theme-mix-panel"
@@ -470,6 +516,6 @@
     </footer>
     <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="script.js?v=20261023r"></script>
+    <script src="script.js?v=20261026f"></script>
   </body>
 </html>

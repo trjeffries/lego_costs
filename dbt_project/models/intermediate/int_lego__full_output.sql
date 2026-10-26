@@ -7,7 +7,6 @@ SELECT
     theme_l1,
     theme_l2,
     theme_l3,
-    brickset,
     released,
     DATE_PART('year',released)::INT AS year_released,
     DATE_TRUNC('month',released)::DATE AS month_released,

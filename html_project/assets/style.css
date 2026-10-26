@@ -154,21 +154,14 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .d3-chart .star-wars-median-line { fill: none; stroke: var(--coral); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
 .d3-chart .star-wars-median-point { fill: var(--coral); stroke: #fff; stroke-width: 1.5; }
 .d3-chart .star-wars-hit-area { fill: transparent; cursor: crosshair; }
-.top-ten-section { margin-top: 36px; padding-top: 32px; border-top: 1px solid var(--line); }
-.top-ten-section h4 { margin: 0 0 7px; font-family: Georgia, serif; font-size: clamp(1.4rem, 2.2vw, 1.9rem); font-weight: 600; letter-spacing: -.03em; }
-.top-ten-section > p { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
-.top-ten-legend { display: flex; flex-wrap: wrap; gap: 12px 25px; margin: 22px 8px 12px; color: #40565d; font-size: .82rem; font-weight: 650; }
-.top-ten-legend span { display: inline-flex; align-items: center; gap: 8px; }
-.top-ten-legend i { display: inline-block; width: 13px; height: 13px; border-radius: 2px; }
-.legend-top-ten-star-wars { background: var(--coral); }
-.legend-top-ten-other { background: var(--teal); }
-#top-ten-price-chart { min-height: 520px; overflow-x: auto; }
-#top-ten-price-chart svg { width: max(100%, 760px); }
-.d3-chart .top-ten-bar.star-wars { fill: var(--coral); }
-.d3-chart .top-ten-bar.other-theme { fill: var(--teal); }
-.d3-chart .top-ten-bar:hover { filter: brightness(.9); }
-.d3-chart .top-ten-price-label { fill: var(--ink); font-size: 12px; font-weight: 700; }
-.d3-chart .top-ten-year-axis text { fill: var(--ink); font-size: 12px; font-weight: 650; }
+.annual-top-five-section { margin-top: 36px; padding-top: 32px; border-top: 1px solid var(--line); }
+.annual-top-five-section > p { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
+#annual-top-five-price-chart { min-height: 520px; overflow-x: auto; }
+#annual-top-five-price-chart svg { width: max(100%, 760px); }
+.d3-chart .annual-top-five-bar.star-wars { fill: var(--coral); }
+.d3-chart .annual-top-five-bar.other-theme { fill: var(--teal); }
+.d3-chart .annual-top-five-bar:hover { filter: brightness(.9); }
+.d3-chart .annual-top-five-year-axis text { fill: var(--ink); font-size: 12px; font-weight: 650; }
 .reason-chart-note { margin: 12px 0 0; padding: 15px 0 0 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; line-height: 1.55; }
 .reason-chart-note li + li { margin-top: 4px; }
 
@@ -211,6 +204,10 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .d3-table-footer button:disabled { color: #9caead; cursor: default; }
 .d3-table-footer .page-button[aria-current="page"] { border-color: var(--teal); background: var(--teal); color: #fff; }
 .d3-tooltip { position: fixed; z-index: 10; max-width: min(320px, calc(100vw - 16px)); padding: .6rem .75rem; border-radius: 9px; background: rgba(27,46,54,.95); color: #fff; font-size: .85rem; line-height: 1.45; white-space: pre-line; pointer-events: none; box-shadow: 0 10px 25px rgba(0,0,0,.2); }
+.annual-top-five-tooltip-heading { font-weight: 700; }
+.annual-top-five-tooltip-list { margin: .4rem 0 0; padding-left: 1.5rem; white-space: normal; }
+.annual-top-five-tooltip-list li + li { margin-top: .25rem; }
+.annual-top-five-tooltip-list .star-wars-set-name { color: #ff9b89; }
 .site-footer { padding: 28px 0 36px; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
 
 @media (max-width: 900px) {

@@ -23,3 +23,10 @@ models:
       +materialized: view
     marts:
       +materialized: table
+
+seeds:
+  lego_costs:
+    lego_sets:
+      +column_types:
+        EAN: varchar
+        UPC: varchar

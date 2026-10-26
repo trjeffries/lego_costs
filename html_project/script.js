@@ -71,8 +71,8 @@ let resizeTimer = null;
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const [setsResponse, bigMacResponse] = await Promise.all([
-      fetch("assets/full_output.json"),
-      fetch("assets/big_mac_gbp_annual.json"),
+      fetch("assets/full_output.json", { cache: "no-cache" }),
+      fetch("assets/big_mac_gbp_annual.json", { cache: "no-cache" }),
     ]);
     if (!setsResponse.ok || !bigMacResponse.ok) {
       throw new Error("A dashboard data request failed");
@@ -160,7 +160,7 @@ function initializeReasonTabs() {
       drawTopFivePriceChart(allSetData, annualBigMacData);
     } else if (selectedTab.id === "star-wars-tab") {
       drawStarWarsValueChart(allSetData);
-      drawTopTenPriceChart(allSetData);
+      drawAnnualTopFivePriceChart(allSetData);
     }
   };
 
@@ -816,8 +816,8 @@ function drawStarWarsValueChart(data) {
     .on("mouseleave", hideTooltip);
 }
 
-function drawTopTenPriceChart(data) {
-  const container = d3.select("#top-ten-price-chart");
+function drawAnnualTopFivePriceChart(data) {
+  const container = d3.select("#annual-top-five-price-chart");
   const pricedSets = data
     .filter((item) =>
       item.retail_gbp !== null &&
@@ -842,7 +842,7 @@ function drawTopTenPriceChart(data) {
         .sort((a, b) =>
           b.price - a.price || String(a.set_number).localeCompare(String(b.set_number)),
         )
-        .slice(0, 10);
+        .slice(0, 5);
       const starWarsSets = topSets.filter((item) => item.theme_l2 === "Star Wars");
       const otherSets = topSets.filter((item) => item.theme_l2 !== "Star Wars");
       const starWarsTotal = d3.sum(starWarsSets, (item) => item.price);
@@ -850,7 +850,7 @@ function drawTopTenPriceChart(data) {
       return {
         year,
         count: topSets.length,
-        starWarsCount: starWarsSets.length,
+        topSets,
         starWarsTotal,
         otherTotal,
         total: starWarsTotal + otherTotal,
@@ -859,11 +859,11 @@ function drawTopTenPriceChart(data) {
 
   const width = Math.max(760, container.node().clientWidth);
   const height = 520;
-  const margin = { top: 16, right: 90, bottom: 48, left: 56 };
+  const margin = { top: 16, right: 38, bottom: 48, left: 56 };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
   const x = d3.scaleLinear()
-    .domain([0, d3.max(yearlyTotals, (item) => item.total) * 1.07])
+    .domain([0, Math.max(3000, d3.max(yearlyTotals, (item) => item.total))])
     .nice()
     .range([0, innerWidth]);
   const y = d3.scaleBand()
@@ -888,19 +888,30 @@ function drawTopTenPriceChart(data) {
     .attr("transform", `translate(0,${innerHeight})`)
     .call(d3.axisBottom(x).ticks(5).tickFormat((value) => `£${d3.format(",")(value)}`));
   plot.append("g")
-    .attr("class", "axis top-ten-year-axis")
+    .attr("class", "axis annual-top-five-year-axis")
     .call(d3.axisLeft(y).tickSize(0).tickPadding(12).tickFormat(d3.format("d")))
     .select(".domain")
     .remove();
 
-  const showYearTooltip = (event, item) => showTooltip(
-    event,
-    `${item.year} top ${item.count} total: ${formatCurrency(item.total, "GBP")}\nStar Wars: ${formatCurrency(item.starWarsTotal, "GBP")} (${item.starWarsCount} ${item.starWarsCount === 1 ? "set" : "sets"})\nOther themes: ${formatCurrency(item.otherTotal, "GBP")} (${item.count - item.starWarsCount} ${item.count - item.starWarsCount === 1 ? "set" : "sets"})`,
-  );
-  plot.selectAll(".top-ten-bar.star-wars")
+  const showYearTooltip = (event, item) => {
+    const tooltip = d3.select("#chart-tooltip").text("").attr("hidden", null);
+    tooltip.append("div")
+      .attr("class", "annual-top-five-tooltip-heading")
+      .text(`${item.year} top ${item.count} total: ${formatCurrency(item.total, "GBP")}`);
+    const list = tooltip.append("ol").attr("class", "annual-top-five-tooltip-list");
+    item.topSets.forEach((set) => {
+      const row = list.append("li");
+      row.append("span")
+        .attr("class", set.theme_l2 === "Star Wars" ? "star-wars-set-name" : null)
+        .text(set.set_name);
+      row.append("span").text(` — ${formatCurrency(set.price, "GBP")}`);
+    });
+    moveTooltip(event);
+  };
+  plot.selectAll(".annual-top-five-bar.star-wars")
     .data(yearlyTotals)
     .join("rect")
-    .attr("class", "top-ten-bar star-wars")
+    .attr("class", "annual-top-five-bar star-wars")
     .attr("x", 0)
     .attr("y", (item) => y(item.year))
     .attr("width", (item) => x(item.starWarsTotal))
@@ -908,10 +919,10 @@ function drawTopTenPriceChart(data) {
     .on("mouseenter", showYearTooltip)
     .on("mousemove", moveTooltip)
     .on("mouseleave", hideTooltip);
-  plot.selectAll(".top-ten-bar.other-theme")
+  plot.selectAll(".annual-top-five-bar.other-theme")
     .data(yearlyTotals)
     .join("rect")
-    .attr("class", "top-ten-bar other-theme")
+    .attr("class", "annual-top-five-bar other-theme")
     .attr("x", (item) => x(item.starWarsTotal))
     .attr("y", (item) => y(item.year))
     .attr("width", (item) => x(item.total) - x(item.starWarsTotal))
@@ -919,14 +930,6 @@ function drawTopTenPriceChart(data) {
     .on("mouseenter", showYearTooltip)
     .on("mousemove", moveTooltip)
     .on("mouseleave", hideTooltip);
-  plot.selectAll(".top-ten-price-label")
-    .data(yearlyTotals)
-    .join("text")
-    .attr("class", "top-ten-price-label")
-    .attr("x", (item) => x(item.total) + 8)
-    .attr("y", (item) => y(item.year) + y.bandwidth() / 2)
-    .attr("dy", ".35em")
-    .text((item) => formatCurrency(item.total, "GBP"));
 }
 
 function parseDate(value) {
@@ -1426,7 +1429,7 @@ function redrawCharts() {
   drawTopFivePriceChart(allSetData, annualBigMacData);
   if (!document.getElementById("star-wars-panel").hidden) {
     drawStarWarsValueChart(allSetData);
-    drawTopTenPriceChart(allSetData);
+    drawAnnualTopFivePriceChart(allSetData);
   }
   drawThemeScatter();
   if (selectedThemeForSubTheme) {

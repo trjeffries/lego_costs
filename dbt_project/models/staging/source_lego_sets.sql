@@ -1,30 +1,24 @@
 SELECT
-    "set name" AS set_name,
-    "set number" AS set_number,
-    pieces,
-    "minifig count" AS minifigs,
-    "minimum age" AS age,
-    "theme group" AS theme_l1,
-    theme AS theme_l2,
-    "sub-theme" AS theme_l3,
-    "brickset url" AS brickset,
+    SetName AS set_name,
+    Number AS set_number,
+    Pieces AS pieces,
+    Minifigs AS minifigs,
+    AgeMin AS age,
+    ThemeGroup AS theme_l1,
+    Theme AS theme_l2,
+    SubTheme AS theme_l3,
     COALESCE(
-        STRPTIME("date released", '%d/%m/%Y')::DATE,
-        CONCAT(year,'-01-01')::DATE)
+        STRPTIME(LaunchDate, '%d/%m/%Y %H:%M:%S')::DATE,
+        CONCAT(YearFrom,'-01-01')::DATE)
         AS released,
-    packaging,
+    PackagingType as packaging,
     CASE
-        WHEN CONTAINS(availability, 'exclusive') THEN 'LEGO exclusive'
-        ELSE availability
+        WHEN CONTAINS(Availability, 'exclusive') THEN 'LEGO exclusive'
+        ELSE Availability
         END AS availability,
-    "uk retail price" AS retail_gbp,
-    "us retail price" AS retail_usd,
-    "de retail price" AS retail_eur,
-    "web gbp price" AS web_gbp,
-    "web usd price" AS web_usd,
-    "web eur price" AS web_eur,
-    "web gbp price (inflated)" AS web_gbp_inf,
-    "web usd price (inflated)" AS web_usd_inf,
-    "web eur price (inflated)" AS web_eur_inf
-
+    UKRetailPrice AS retail_gbp,
+    USRetailPrice AS retail_usd,
+    DERetailPrice AS retail_eur
+    
 FROM {{ source('duckdb', 'lego_sets') }}
+WHERE Category IN ('Normal', 'Extended', 'Collection')

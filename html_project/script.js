@@ -60,6 +60,7 @@ const rawColumns = [
 
 let allSetData = [];
 let annualBigMacData = [];
+let adventCalendarData = [];
 let tableRows = [];
 let selectedThemeForSubTheme = null;
 let selectedThemeForTable = null;
@@ -95,6 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function initializeDashboard() {
+  initializeAdventCalendars();
   populateCategoryFilter();
   populateSubThemeFilter();
   initializeYearFilter();
@@ -161,6 +163,8 @@ function initializeReasonTabs() {
     } else if (selectedTab.id === "star-wars-tab") {
       drawStarWarsValueChart(allSetData);
       drawAnnualTopFivePriceChart(allSetData);
+    } else if (selectedTab.id === "advent-calendar-tab") {
+      drawAdventCalendarChart();
     }
   };
 
@@ -932,6 +936,178 @@ function drawAnnualTopFivePriceChart(data) {
     .on("mouseleave", hideTooltip);
 }
 
+function adventMetricValue(set, key) {
+  const value = set[key];
+  if (value === null || value === undefined || value === "") return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function initializeAdventCalendars() {
+  adventCalendarData = allSetData.filter((set) =>
+    typeof set.set_name === "string" &&
+    set.set_name.trim() !== "Advent Calendar" &&
+    /^.+ Advent Calendar(?: \d{4})?$/.test(set.set_name) &&
+    Number.isInteger(Number(set.year_released)) &&
+    Number(set.year_released) >= 2005 &&
+    set.theme_l2,
+  );
+  const themeSelect = document.getElementById("advent-calendar-theme");
+  const themes = [...new Set(adventCalendarData.map((set) => set.theme_l2))].sort();
+  themeSelect.add(new Option("All themes", "all"));
+  themes.forEach((theme) => themeSelect.add(new Option(theme, theme)));
+  themeSelect.value = "all";
+  themeSelect.addEventListener("change", drawAdventCalendarChart);
+}
+
+function drawAdventCalendarChart() {
+  const theme = document.getElementById("advent-calendar-theme").value;
+  const sets = adventCalendarData
+    .filter((set) => theme === "all" || set.theme_l2 === theme)
+    .sort((a, b) => Number(a.year_released) - Number(b.year_released));
+  const container = d3.select("#advent-calendar-chart");
+  container.html("");
+  if (!sets.length) {
+    container.text("No matching Advent Calendar sets are available.");
+    return;
+  }
+
+  const yearlyData = d3.rollups(
+    sets,
+    (yearSets) => {
+      const meanMetric = (key) => {
+        const values = yearSets.map((set) => adventMetricValue(set, key))
+          .filter((value) => value !== null);
+        return values.length ? d3.mean(values) : null;
+      };
+      return {
+        year: Number(yearSets[0].year_released),
+        sets: yearSets,
+        retail_gbp: meanMetric("retail_gbp"),
+        pieces: meanMetric("pieces"),
+        minifigs: meanMetric("minifigs"),
+      };
+    },
+    (set) => Number(set.year_released),
+  ).map(([, summary]) => summary).sort((a, b) => a.year - b.year);
+  const latest = yearlyData[yearlyData.length - 1];
+  document.getElementById("advent-calendar-latest").textContent =
+    theme === "all"
+      ? `${latest.year} average · ${latest.sets.length} Advent calendars`
+      : `Most recent match: ${latest.year} · ${latest.sets[0].set_name}`;
+  document.getElementById("advent-calendar-price").textContent =
+    formatCurrency(latest.retail_gbp, "GBP");
+  document.getElementById("advent-calendar-pieces").textContent =
+    latest.pieces === null ? "—" : latest.pieces.toLocaleString("en-GB", { maximumFractionDigits: 1 });
+  document.getElementById("advent-calendar-minifigs").textContent =
+    latest.minifigs === null ? "—" : latest.minifigs.toLocaleString("en-GB", { maximumFractionDigits: 1 });
+  container.attr("aria-label", `Annual average UK price, pieces and minifigures for ${theme === "all" ? "all themes" : theme} Advent Calendar sets`);
+
+  const firstYear = yearlyData[0].year;
+  const lastYear = latest.year;
+  const years = d3.range(firstYear, lastYear + 1);
+  const byYear = new Map(yearlyData.map((item) => [item.year, item]));
+  const series = years.map((year) => byYear.get(year) || { year });
+  const width = Math.max(820, container.node().clientWidth);
+  const height = 460;
+  const margin = { top: 22, right: 118, bottom: 52, left: 62 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const x = d3.scaleBand().domain(years).range([0, innerWidth]).padding(0.22);
+  const xCenter = (year) => x(year) + x.bandwidth() / 2;
+  const scaleFor = (key) => d3.scaleLinear()
+    .domain([0, Math.max(1, d3.max(yearlyData, (item) => item[key]) || 0)])
+    .nice(4)
+    .range([innerHeight, 0]);
+  const priceY = scaleFor("retail_gbp");
+  const piecesY = scaleFor("pieces");
+  const minifigsY = scaleFor("minifigs");
+  const svg = container.append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-hidden", "true");
+  const plot = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  plot.append("g")
+    .attr("class", "grid axis-advent-price")
+    .call(d3.axisLeft(priceY).ticks(4).tickSize(-innerWidth)
+      .tickFormat((value) => `£${d3.format("~g")(value)}`))
+    .select(".domain")
+    .remove();
+  plot.append("g")
+    .attr("class", "axis axis-advent-pieces")
+    .attr("transform", `translate(${innerWidth},0)`)
+    .call(d3.axisRight(piecesY).ticks(4).tickFormat(d3.format("d")));
+  plot.append("g")
+    .attr("class", "axis axis-advent-minifigs")
+    .attr("transform", `translate(${innerWidth + 58},0)`)
+    .call(d3.axisRight(minifigsY)
+      .tickValues(minifigsY.ticks(4).filter(Number.isInteger))
+      .tickFormat(d3.format("d")));
+
+  const tooltipText = (item) => {
+    const description = theme === "all"
+      ? `${item.sets.length} calendars · annual average`
+      : item.sets[0].set_name;
+    const pieces = item.pieces === null ? "—" : item.pieces.toLocaleString("en-GB", { maximumFractionDigits: 1 });
+    const minifigs = item.minifigs === null ? "—" : item.minifigs.toLocaleString("en-GB", { maximumFractionDigits: 1 });
+    return `${item.year} · ${description}\nUK price: ${formatCurrency(item.retail_gbp, "GBP")}\nPieces: ${pieces}\nMinifigures: ${minifigs}`;
+  };
+  const showYearTooltip = (event, item) => showTooltip(event, tooltipText(item));
+  plot.selectAll(".advent-minifig-bar")
+    .data(yearlyData)
+    .join("rect")
+    .attr("class", (item) => `advent-minifig-bar${item.minifigs === null ? " is-missing" : ""}`)
+    .attr("x", (item) => x(item.year) + x.bandwidth() * 0.15)
+    .attr("y", (item) => item.minifigs === null ? innerHeight - 18 : minifigsY(item.minifigs))
+    .attr("width", x.bandwidth() * 0.7)
+    .attr("height", (item) => item.minifigs === null ? 18 : innerHeight - minifigsY(item.minifigs))
+    .on("mouseenter", showYearTooltip)
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
+  plot.selectAll(".advent-minifig-missing-label")
+    .data(yearlyData.filter((item) => item.minifigs === null))
+    .join("text")
+    .attr("class", "advent-minifig-missing-label")
+    .attr("x", (item) => xCenter(item.year))
+    .attr("y", innerHeight - 5)
+    .attr("text-anchor", "middle")
+    .text("?");
+
+  [
+    { key: "retail_gbp", scale: priceY, className: "advent-price" },
+    { key: "pieces", scale: piecesY, className: "advent-pieces" },
+  ].forEach((metric) => {
+    const line = d3.line()
+      .defined((item) => item[metric.key] !== null && item[metric.key] !== undefined)
+      .x((item) => xCenter(item.year))
+      .y((item) => metric.scale(item[metric.key]));
+    plot.append("path")
+      .datum(series)
+      .attr("class", `advent-combined-line ${metric.className}`)
+      .attr("d", line);
+    plot.selectAll(`.${metric.className}-point`)
+      .data(yearlyData.filter((item) => item[metric.key] !== null))
+      .join("circle")
+      .attr("class", `advent-combined-point ${metric.className}-point`)
+      .attr("cx", (item) => xCenter(item.year))
+      .attr("cy", (item) => metric.scale(item[metric.key]))
+      .attr("r", 4.5)
+      .on("mouseenter", showYearTooltip)
+      .on("mousemove", moveTooltip)
+      .on("mouseleave", hideTooltip);
+  });
+
+  const step = Math.max(1, Math.ceil((lastYear - firstYear) / 6));
+  const tickYears = d3.range(firstYear, lastYear + 1, step);
+  if (tickYears[tickYears.length - 1] !== lastYear) tickYears.push(lastYear);
+  plot.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).tickValues(tickYears).tickFormat(d3.format("d")));
+}
+
 function parseDate(value) {
   const parsed = new Date(`${value}T00:00:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
@@ -1430,6 +1606,9 @@ function redrawCharts() {
   if (!document.getElementById("star-wars-panel").hidden) {
     drawStarWarsValueChart(allSetData);
     drawAnnualTopFivePriceChart(allSetData);
+  }
+  if (!document.getElementById("advent-calendar-panel").hidden) {
+    drawAdventCalendarChart();
   }
   drawThemeScatter();
   if (selectedThemeForSubTheme) {

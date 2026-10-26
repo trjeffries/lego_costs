@@ -113,7 +113,9 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .question-icon i { display: block; width: 12px; border-radius: 3px 3px 0 0; background: #6a9a96; }
 .icon-death-star { background: var(--teal); -webkit-mask: url("death-star-svgrepo-com.svg") center / 42px 42px no-repeat; mask: url("death-star-svgrepo-com.svg") center / 42px 42px no-repeat; }
 .question-card[aria-selected="true"] .icon-death-star { background: var(--coral); }
-.icon-themes i { width: 14px; height: 14px; border-radius: 4px; transform: rotate(-12deg); }.icon-themes i:nth-child(2) { background: var(--coral); transform: rotate(10deg) translateY(-9px); }.icon-themes i:nth-child(3) { background: #e2ad69; transform: rotate(-8deg) translateY(-2px); }
+.icon-tree { align-items: center; color: var(--teal); }
+.icon-tree svg { display: block; width: 47px; height: 42px; }
+.question-card[aria-selected="true"] .icon-tree { color: var(--coral); }
 .icon-price-tag { align-items: center; }
 .icon-price-tag svg { display: block; width: 47px; height: 42px; }
 .icon-price-tag path { fill: var(--coral); }
@@ -129,6 +131,37 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .reason-chart-heading { display: flex; align-items: start; justify-content: space-between; gap: 24px; }
 .reason-chart-heading h3 { margin: 0 0 9px; font-family: Georgia, serif; font-size: clamp(1.55rem, 2.6vw, 2.1rem); font-weight: 600; line-height: 1.2; }
 .reason-chart-heading p:last-child { max-width: 590px; margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
+.advent-calendar-heading { align-items: end; }
+.advent-calendar-select-label { display: grid; flex: 0 0 min(250px, 35%); gap: 7px; color: var(--muted); font-size: .76rem; font-weight: 750; letter-spacing: .04em; }
+.advent-calendar-select-label select { box-sizing: border-box; width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid #cbd8d7; border-radius: 9px; background: #fff; color: var(--ink); font-size: .91rem; font-weight: 550; cursor: pointer; }
+.advent-calendar-latest { margin: 30px 0 11px; color: var(--ink); font-size: .88rem; font-weight: 700; }
+.advent-calendar-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.advent-calendar-metrics > div { display: grid; gap: 5px; min-width: 0; padding: 17px 20px; border: 1px solid var(--line); border-radius: 12px; background: #f8faf9; }
+.advent-calendar-metrics span { color: var(--muted); font-size: .78rem; font-weight: 700; }
+.advent-calendar-metrics strong { color: var(--ink); font-size: clamp(1.3rem, 2vw, 1.75rem); line-height: 1.1; }
+.advent-calendar-legend { display: flex; flex-wrap: wrap; gap: 11px 24px; margin: 24px 0 8px; color: #40565d; font-size: .82rem; font-weight: 650; }
+.advent-calendar-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.advent-calendar-legend i { display: inline-block; width: 22px; flex: none; }
+.advent-key-price { border-top: 3px solid var(--coral); }
+.advent-key-pieces { border-top: 3px solid var(--teal); }
+.advent-calendar-legend .advent-key-minifigs { width: 12px; height: 12px; background: var(--blue); opacity: .65; }
+#advent-calendar-chart { min-height: 460px; overflow-x: auto; }
+#advent-calendar-chart svg { width: max(100%, 820px); }
+.d3-chart .advent-minifig-bar { fill: var(--blue); opacity: .36; cursor: crosshair; }
+.d3-chart .advent-minifig-bar:hover { opacity: .62; }
+.d3-chart .advent-minifig-bar.is-missing { fill: #fff; stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 3 2; opacity: 1; }
+.d3-chart .advent-minifig-missing-label { fill: var(--blue); font-size: 12px; font-weight: 800; pointer-events: none; }
+.d3-chart .advent-combined-line { fill: none; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.d3-chart .advent-combined-line.advent-price { stroke: var(--coral); }
+.d3-chart .advent-combined-line.advent-pieces { stroke: var(--teal); }
+.d3-chart .advent-combined-point { stroke: #fff; stroke-width: 1.5; cursor: crosshair; }
+.d3-chart .advent-combined-point:hover { stroke: var(--ink); stroke-width: 2; }
+.d3-chart .advent-price-point { fill: var(--coral); }
+.d3-chart .advent-pieces-point { fill: var(--teal); }
+.d3-chart .axis-advent-price text { fill: var(--coral-dark); }
+.d3-chart .axis.axis-advent-pieces text { fill: var(--teal); }
+.d3-chart .axis.axis-advent-minifigs text { fill: var(--blue); }
+.advent-calendar-note { margin: 0; color: var(--muted); font-size: .79rem; line-height: 1.5; }
 .price-comparison-legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 9px 24px; margin: 24px 8px 10px; color: #40565d; font-size: .82rem; font-weight: 650; }
 .price-comparison-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .price-comparison-legend .legend-mac-entry { margin-left: auto; text-align: right; }
@@ -246,6 +279,9 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
   .question-icon { margin-bottom: 14px; }
   .reason-chart-card { padding: 22px 16px; }
   .reason-chart-heading { display: block; }
+  .advent-calendar-select-label { margin-top: 19px; }
+  .advent-calendar-metrics { gap: 7px; }
+  .advent-calendar-metrics > div { padding: 12px 10px; }
   .explore-section { margin-top: 65px; padding: 30px 22px 34px; border-radius: 20px; }
   .panel-heading-with-action .outline-button { margin-top: 14px; }
   .d3-table-controls, .d3-table-footer { align-items: flex-start; flex-direction: column; }

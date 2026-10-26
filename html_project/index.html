@@ -8,7 +8,7 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/style.css?v=20261026l" />
+    <link rel="stylesheet" href="assets/style.css?v=20261026s" />
     <title>Is LEGO Really Getting More Expensive?</title>
   </head>
   <body>
@@ -255,21 +255,22 @@
             >
           </button>
           <button
-            id="theme-mix-tab"
+            id="advent-calendar-tab"
             class="question-card"
             type="button"
             role="tab"
             aria-selected="false"
-            aria-controls="theme-mix-panel"
+            aria-controls="advent-calendar-panel"
             tabindex="-1"
           >
-            <span class="question-icon icon-themes" aria-hidden="true"
-              ><i></i><i></i><i></i
-            ></span>
-            <span class="question-kicker">THEME MIX</span>
-            <span class="question-title"
-              >Are we buying different kinds of sets?</span
-            >
+            <span class="question-icon icon-tree" aria-hidden="true">
+              <svg viewBox="0 0 48 42" focusable="false">
+                <path d="M24 0l1.5 3.2 3.5.5-2.5 2.5.6 3.5L24 8l-3.1 1.7.6-3.5L19 3.7l3.5-.5z" fill="currentColor" />
+                <path d="M24 10 16 21h4l-9 9h5l-7 8h30l-7-8h5l-9-9h4zM21 37h6v5h-6z" fill="currentColor" />
+              </svg>
+            </span>
+            <span class="question-kicker">COUNTING DOWN</span>
+            <span class="question-title">What is in an Advent calendar?</span>
           </button>
         </div>
         <div id="reason-charts" class="reason-charts">
@@ -324,16 +325,37 @@
             </div>
           </section>
           <section
-            id="theme-mix-panel"
-            class="reason-chart-card reason-chart-placeholder"
+            id="advent-calendar-panel"
+            class="reason-chart-card"
             role="tabpanel"
-            aria-labelledby="theme-mix-tab"
+            aria-labelledby="advent-calendar-tab"
             tabindex="0"
             hidden
           >
-            <p class="question-kicker">THEME MIX</p>
-            <h3>Are we buying different kinds of sets?</h3>
-            <p>Chart coming soon.</p>
+            <div class="reason-chart-heading advent-calendar-heading">
+              <div>
+                <p class="question-kicker">COUNTING DOWN</p>
+                <h3>What is in an Advent calendar?</h3>
+                <p>See how Advent calendar prices, pieces and minifigures have changed across themes.</p>
+              </div>
+              <label class="advent-calendar-select-label" for="advent-calendar-theme">
+                Calendar theme
+                <select id="advent-calendar-theme"></select>
+              </label>
+            </div>
+            <p id="advent-calendar-latest" class="advent-calendar-latest"></p>
+            <div id="advent-calendar-metrics" class="advent-calendar-metrics" aria-label="Latest selected calendar values">
+              <div><span>UK price</span><strong id="advent-calendar-price">—</strong></div>
+              <div><span>Pieces</span><strong id="advent-calendar-pieces">—</strong></div>
+              <div><span>Minifigures</span><strong id="advent-calendar-minifigs">—</strong></div>
+            </div>
+            <div class="advent-calendar-legend" aria-hidden="true">
+              <span><i class="advent-key-price"></i> UK price</span>
+              <span><i class="advent-key-pieces"></i> Pieces</span>
+              <span><i class="advent-key-minifigs"></i> Minifigures</span>
+            </div>
+            <div id="advent-calendar-chart" class="d3-chart" role="img" aria-label="Annual UK price, pieces and minifigures of the selected Advent Calendar theme"></div>
+            <p class="advent-calendar-note">Includes named Advent Calendar titles from 2005 onward, with or without a year at the end; sets titled only “Advent Calendar” are excluded. All themes uses annual per-set averages; an outlined “?” marks an unavailable minifigure count.</p>
           </section>
           <section
             id="top-end-panel"
@@ -511,6 +533,6 @@
     </footer>
     <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="script.js?v=20261026k"></script>
+    <script src="script.js?v=20261026x"></script>
   </body>
 </html>

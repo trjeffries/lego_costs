@@ -104,7 +104,7 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .reasons-heading { position: relative; align-items: start; }
 .reasons-heading h2 { max-width: 690px; }
 .reasons-heading .section-lead { margin-top: 18px !important; max-width: 730px !important; color: #344d54 !important; font-size: 1.17rem; }
-.question-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 34px; }
+.question-grid { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 34px; }
 .question-card { display: block; width: 100%; min-height: 195px; padding: 26px; border: 1px solid rgba(36,110,120,.13); border-radius: 16px; background: rgba(255,255,255,.7); color: var(--ink); text-align: left; cursor: pointer; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
 .question-card:hover { border-color: rgba(217,93,69,.5); background: #fff; transform: translateY(-2px); }
 .question-card[aria-selected="true"] { border-color: var(--coral); background: #fff7f4; box-shadow: 0 10px 24px rgba(217,93,69,.14); }
@@ -120,6 +120,11 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .icon-price-tag svg { display: block; width: 47px; height: 42px; }
 .icon-price-tag path { fill: var(--coral); }
 .icon-price-tag text { fill: #fff; font-size: 22px; font-weight: 800; }
+.icon-high-cost { align-items: center; }
+.icon-high-cost svg { display: block; width: 47px; height: 42px; }
+.icon-high-cost path { fill: var(--teal); }
+.icon-high-cost .icon-box-seams { fill: none; stroke: #fff; stroke-width: 1.5; }
+.question-card[aria-selected="true"] .icon-high-cost path:not(.icon-box-seams) { fill: var(--coral); }
 .question-kicker { margin: 0 0 9px; color: var(--teal); font-size: .72rem; font-weight: 800; letter-spacing: .14em; }
 .question-card .question-kicker { display: block; }
 .question-title { display: block; max-width: 230px; margin: 0; font-family: Georgia, serif; font-size: 1.27rem; line-height: 1.3; font-weight: 600; }
@@ -176,6 +181,20 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
 .d3-chart .big-mac-price-point { fill: var(--teal); stroke: #fff; stroke-width: 1; }
 .d3-chart .axis-big-mac path, .d3-chart .axis-big-mac line { stroke: var(--teal); }
 .d3-chart .axis-big-mac text { fill: var(--teal); }
+.high-cost-legend { display: flex; flex-wrap: wrap; gap: 12px 26px; margin: 24px 8px 10px; color: #40565d; font-size: .82rem; font-weight: 650; }
+.high-cost-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.high-cost-legend i { display: inline-block; flex: none; }
+.legend-high-cost-count { width: 13px; height: 13px; background: var(--coral); }
+.legend-high-cost-share { width: 23px; border-top: 3px solid var(--teal); }
+#high-cost-chart { min-height: 410px; overflow-x: auto; }
+#high-cost-chart svg { width: max(100%, 760px); }
+.d3-chart .high-cost-bar { fill: var(--coral); opacity: .82; }
+.d3-chart .high-cost-share-line { fill: none; stroke: var(--teal); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.d3-chart .high-cost-share-point { fill: var(--teal); stroke: #fff; stroke-width: 1; }
+.d3-chart .high-cost-year-hit { fill: transparent; cursor: crosshair; }
+.d3-chart .axis-high-cost-count text { fill: var(--coral-dark); }
+.d3-chart .axis-high-cost-share text { fill: var(--teal); }
+.high-cost-note { margin: 0; color: var(--muted); font-size: .79rem; line-height: 1.5; }
 .star-wars-legend { display: flex; flex-wrap: wrap; gap: 12px 26px; margin: 24px 8px 10px; color: #40565d; font-size: .82rem; font-weight: 650; }
 .star-wars-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .star-wars-legend i { display: inline-block; flex: none; }
@@ -248,6 +267,7 @@ a:hover { color: var(--coral-dark); text-decoration: none; }
   .hero-copy { padding-right: 28px; }
   .hero-art { min-height: 430px; }
   .question-card { padding: 21px; }
+  .question-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .d3-scatter { min-width: 660px; }
 }

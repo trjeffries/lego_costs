@@ -8,7 +8,7 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/style.css?v=20261026s" />
+    <link rel="stylesheet" href="assets/style.css?v=20261029d" />
     <title>Is LEGO Really Getting More Expensive?</title>
   </head>
   <body>
@@ -237,6 +237,24 @@
             <span class="question-title">What do the priciest sets cost?</span>
           </button>
           <button
+            id="high-cost-tab"
+            class="question-card"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="high-cost-panel"
+            tabindex="-1"
+          >
+            <span class="question-icon icon-high-cost" aria-hidden="true">
+              <svg viewBox="0 0 48 42" focusable="false">
+                <path d="M17 2h14v11H17zM10 14h14v11H10zM24 14h14v11H24zM3 26h14v13H3zM17 26h14v13H17zM31 26h14v13H31z" />
+                <path class="icon-box-seams" d="M24 2v11M17 14v11M31 14v11M10 26v13M24 26v13M38 26v13" />
+              </svg>
+            </span>
+            <span class="question-kicker">ABOVE £100</span>
+            <span class="question-title">How common are pricier sets?</span>
+          </button>
+          <button
             id="star-wars-tab"
             class="question-card"
             type="button"
@@ -394,6 +412,33 @@
             ></div>
             <ul id="top-five-price-note" class="reason-chart-note"></ul>
           </section>
+          <section
+            id="high-cost-panel"
+            class="reason-chart-card"
+            role="tabpanel"
+            aria-labelledby="high-cost-tab"
+            tabindex="0"
+            hidden
+          >
+            <div class="reason-chart-heading">
+              <div>
+                <p class="question-kicker">ABOVE £100</p>
+                <h3>How common are pricier sets?</h3>
+                <p>Each year, how many sets have a UK list price over £100, and what share of sets with a listed UK price do they make up?</p>
+              </div>
+            </div>
+            <div class="high-cost-legend" aria-hidden="true">
+              <span><i class="legend-high-cost-count"></i> Sets over £100</span>
+              <span><i class="legend-high-cost-share"></i> Share of UK-priced sets</span>
+            </div>
+            <div
+              id="high-cost-chart"
+              class="d3-chart"
+              role="img"
+              aria-label="Annual number of LEGO sets with a listed UK price over £100, and their percentage of sets with a listed UK price that year"
+            ></div>
+            <p class="high-cost-note">Sets without a UK price or priced at £0 are excluded entirely. Sets priced exactly £100 remain in the denominator, but are not counted as over £100.</p>
+          </section>
         </div>
       </section>
 
@@ -533,6 +578,6 @@
     </footer>
     <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="script.js?v=20261026x"></script>
+    <script src="script.js?v=20261029c"></script>
   </body>
 </html>

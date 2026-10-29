@@ -165,6 +165,8 @@ function initializeReasonTabs() {
       drawAnnualTopFivePriceChart(allSetData);
     } else if (selectedTab.id === "advent-calendar-tab") {
       drawAdventCalendarChart();
+    } else if (selectedTab.id === "high-cost-tab") {
+      drawHighCostChart(allSetData);
     }
   };
 
@@ -708,6 +710,118 @@ function drawTopFivePriceChart(data, bigMacData) {
       ? "The Big Mac line uses that year’s first GBP observation."
       : "Big Mac comparison unavailable: the 2001 GBP observation is missing.",
   ]);
+}
+
+function drawHighCostChart(data) {
+  const container = d3.select("#high-cost-chart");
+  const pricedSets = data.filter((set) =>
+    Number.isInteger(Number(set.year_released)) &&
+    set.retail_gbp !== null &&
+    set.retail_gbp !== "" &&
+    Number.isFinite(Number(set.retail_gbp)) &&
+    Number(set.retail_gbp) > 0,
+  );
+  const yearly = d3.rollups(
+    pricedSets,
+    (sets) => {
+      const over100 = sets.filter((set) => Number(set.retail_gbp) > 100).length;
+      return {
+        total: sets.length,
+        over100,
+        share: over100 / sets.length,
+      };
+    },
+    (item) => Number(item.year_released),
+  )
+    .map(([year, counts]) => ({ year, ...counts }))
+    .sort((a, b) => a.year - b.year);
+
+  container.html("");
+  if (!yearly.length) {
+    container.text("No annual set data is available for this chart.");
+    return;
+  }
+
+  const width = Math.max(760, container.node().clientWidth);
+  const height = 410;
+  const margin = { top: 22, right: 62, bottom: 48, left: 58 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const x = d3.scaleBand()
+    .domain(yearly.map((item) => item.year))
+    .range([0, innerWidth])
+    .padding(0.27);
+  const countY = d3.scaleLinear()
+    .domain([0, d3.max(yearly, (item) => item.over100) * 1.12])
+    .nice()
+    .range([innerHeight, 0]);
+  const shareY = d3.scaleLinear()
+    .domain([0, Math.max(0.05, d3.max(yearly, (item) => item.share) * 1.15)])
+    .nice()
+    .range([innerHeight, 0]);
+  const svg = container.append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("height", height)
+    .attr("aria-hidden", "true");
+  const plot = svg.append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  plot.append("g")
+    .attr("class", "grid")
+    .call(d3.axisLeft(countY).ticks(5).tickSize(-innerWidth).tickFormat(""))
+    .select(".domain")
+    .remove();
+  plot.append("g")
+    .attr("class", "axis axis-high-cost-count")
+    .call(d3.axisLeft(countY).ticks(5).tickFormat(d3.format("d")));
+  plot.append("g")
+    .attr("class", "axis axis-high-cost-share")
+    .attr("transform", `translate(${innerWidth},0)`)
+    .call(d3.axisRight(shareY).ticks(5).tickFormat(d3.format(".0%")));
+  const tickStep = Math.max(1, Math.ceil(yearly.length / Math.max(3, Math.floor(innerWidth / 80))));
+  const tickYears = yearly
+    .filter((_item, index) => index % tickStep === 0 || index === yearly.length - 1)
+    .map((item) => item.year);
+  plot.append("g")
+    .attr("class", "axis")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).tickValues(tickYears).tickFormat(d3.format("d")));
+
+  plot.selectAll(".high-cost-bar")
+    .data(yearly)
+    .join("rect")
+    .attr("class", "high-cost-bar")
+    .attr("x", (item) => x(item.year))
+    .attr("y", (item) => countY(item.over100))
+    .attr("width", x.bandwidth())
+    .attr("height", (item) => innerHeight - countY(item.over100));
+  plot.append("path")
+    .datum(yearly)
+    .attr("class", "high-cost-share-line")
+    .attr("d", d3.line()
+      .x((item) => x(item.year) + x.bandwidth() / 2)
+      .y((item) => shareY(item.share)));
+  plot.selectAll(".high-cost-share-point")
+    .data(yearly)
+    .join("circle")
+    .attr("class", "high-cost-share-point")
+    .attr("cx", (item) => x(item.year) + x.bandwidth() / 2)
+    .attr("cy", (item) => shareY(item.share))
+    .attr("r", 3.5);
+  plot.selectAll(".high-cost-year-hit")
+    .data(yearly)
+    .join("rect")
+    .attr("class", "high-cost-year-hit")
+    .attr("x", (item) => x(item.year))
+    .attr("y", 0)
+    .attr("width", x.bandwidth())
+    .attr("height", innerHeight)
+    .on("mouseenter", (event, item) => showTooltip(
+      event,
+      `${item.year}\nOver £100: ${d3.format(",")(item.over100)} of ${d3.format(",")(item.total)} UK-priced sets (${d3.format(".1%")(item.share)})`,
+    ))
+    .on("mousemove", moveTooltip)
+    .on("mouseleave", hideTooltip);
 }
 
 function drawStarWarsValueChart(data) {
@@ -1609,6 +1723,9 @@ function redrawCharts() {
   }
   if (!document.getElementById("advent-calendar-panel").hidden) {
     drawAdventCalendarChart();
+  }
+  if (!document.getElementById("high-cost-panel").hidden) {
+    drawHighCostChart(allSetData);
   }
   drawThemeScatter();
   if (selectedThemeForSubTheme) {

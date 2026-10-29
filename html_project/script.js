@@ -1,4 +1,5 @@
-const chartColor = "rgb(75, 135, 192)";
+const chartColor = "#246e78";
+const chartPaleColor = "#a8cacc";
 const themeColors = [
   "#4e79a7",
   "#f28e2b",
@@ -21,7 +22,7 @@ const pricePerMetrics = {
   ppbm_us: "Pieces per Big Mac (US)",
   ppbm_gb: "Pieces per Big Mac (UK)",
   ppbm_eu: "Pieces per Big Mac (EU)",
-  ppsp: "Pieces per S&P 500",
+  ppsp: "Pieces per unit of the S&P 500",
   ppp: "Pieces per Pound",
   ppd: "Pieces per Dollar",
   ppe: "Pieces per Euro",
@@ -378,6 +379,9 @@ function numericValues(data, field) {
 
 function drawLineChart(data, metric) {
   const container = d3.select("#line-chart");
+  const comparison = pricePerMetrics[metric].replace(/^P/, "p");
+  document.getElementById("eu-data-note").hidden =
+    metric !== "ppe" && metric !== "ppbm_eu";
   const width = container.node().clientWidth;
   const height = 440;
   const margin = { top: 25, right: 24, bottom: 70, left: 82 };
@@ -390,7 +394,7 @@ function drawLineChart(data, metric) {
         item[metric] !== null &&
         item[metric] !== "",
     ),
-    (items) => d3.mean(items, (item) => Number(item[metric])),
+    (items) => median(items.map((item) => Number(item[metric]))),
     (item) => item.released,
   );
   const releaseData = releases
@@ -483,11 +487,6 @@ function drawLineChart(data, metric) {
     .attr("class", "line-release")
     .attr("d", line);
   plot
-    .append("path")
-    .datum(annualData)
-    .attr("class", "line-annual")
-    .attr("d", line);
-  plot
     .selectAll(".release-point")
     .data(releaseData)
     .join("circle")
@@ -495,15 +494,20 @@ function drawLineChart(data, metric) {
     .attr("cx", (item) => x(item.date))
     .attr("cy", (item) => y(item.value))
     .attr("r", 2.5)
-    .attr("fill", "rgba(75, 135, 192, 0.45)")
+    .attr("fill", chartPaleColor)
     .on("mouseenter", (event, item) =>
       showTooltip(
         event,
-        `${d3.timeFormat("%Y-%m-%d")(item.date)}: ${item.value.toLocaleString()}`,
+        `${d3.timeFormat("%Y-%m-%d")(item.date)}: ${item.value.toLocaleString()} ${comparison}`,
       ),
     )
     .on("mousemove", moveTooltip)
     .on("mouseleave", hideTooltip);
+  plot
+    .append("path")
+    .datum(annualData)
+    .attr("class", "line-annual")
+    .attr("d", line);
   plot
     .selectAll(".annual-point")
     .data(annualData)
@@ -516,34 +520,11 @@ function drawLineChart(data, metric) {
     .on("mouseenter", (event, item) =>
       showTooltip(
         event,
-        `${item.date.getFullYear()} annual median: ${item.value.toLocaleString()}`,
+        `${item.date.getFullYear()} annual median: ${item.value.toLocaleString()} ${comparison}`,
       ),
     )
     .on("mousemove", moveTooltip)
     .on("mouseleave", hideTooltip);
-  const legend = svg
-    .append("g")
-    .attr("class", "chart-legend")
-    .attr("transform", `translate(${margin.left + 8},${margin.top + 4})`);
-  [
-    {
-      label: `${pricePerMetrics[metric]} by release date`,
-      color: "rgba(75, 135, 192, 0.35)",
-    },
-    { label: `${pricePerMetrics[metric]} annual median`, color: chartColor },
-  ].forEach((entry, index) => {
-    const row = legend
-      .append("g")
-      .attr("transform", `translate(0,${index * 20})`);
-    row
-      .append("line")
-      .attr("x2", 24)
-      .attr("y1", 5)
-      .attr("y2", 5)
-      .attr("stroke", entry.color)
-      .attr("stroke-width", 2.5);
-    row.append("text").attr("x", 31).attr("y", 9).text(entry.label);
-  });
 }
 
 function buildTopFiveAnnualPrices(data) {

@@ -8,7 +8,7 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/style.css?v=20261029d" />
+    <link rel="stylesheet" href="assets/style.css?v=20261029l" />
     <title>Is LEGO Really Getting More Expensive?</title>
   </head>
   <body>
@@ -43,9 +43,6 @@
       >
         <div class="hero">
           <div class="hero-copy">
-            <p class="eyebrow">
-              <span class="eyebrow-line"></span> THE QUESTION
-            </p>
             <h1 id="page-title">
               Is LEGO really getting <em>more expensive?</em>
             </h1>
@@ -53,13 +50,6 @@
               We all seem to think so. I decided to look at the sets, the prices
               and the pieces to find out.
             </p>
-            <p class="hero-detail">
-              Follow the numbers over time, look at what might be driving them,
-              then explore the sets for yourself.
-            </p>
-            <a class="text-link" href="#price-trend"
-              >Start with the trend <span aria-hidden="true">↗</span></a
-            >
           </div>
           <div class="hero-art" aria-hidden="true">
             <div class="hero-brick brick-back">
@@ -84,8 +74,14 @@
             </p>
             <h2 id="trend-heading">How has the value changed?</h2>
             <p>
-              Choose a measure and a theme to see how much LEGO you get for your
-              money.
+              This is the big one: what's the actual cost, in price per piece?
+              Of course, you've a number of ways to choose - absolute value
+              would seem the obvious one, but then we need to take into account
+              inflation, and in the UK that gets <i>complicated</i>, with
+              multiple indexes. We could compare it to the stock market, though
+              that might cause issues around 2008. So let's choose a different
+              measure as our default: how many pieces would you get for the cost
+              of one Big Mac?
             </p>
           </div>
         </div>
@@ -108,7 +104,7 @@
               <option value="ppbm_us">Pieces per Big Mac (US)</option>
               <option value="ppbm_gb">Pieces per Big Mac (UK)</option>
               <option value="ppbm_eu">Pieces per Big Mac (EU)</option>
-              <option value="ppsp">Pieces per S&amp;P 500</option>
+              <option value="ppsp">Pieces per unit of the S&amp;P 500</option>
               <option value="ppp">Pieces per Pound</option>
               <option value="ppd">Pieces per Dollar</option>
               <option value="ppe">Pieces per Euro</option>
@@ -190,15 +186,28 @@
           id="line-chart"
           class="d3-chart"
           role="img"
-          aria-label="Price per metric by release date and annual median"
+          aria-label="Median value by release date and year"
         ></div>
         <p class="chart-caption">
-          <span class="caption-key"></span>
-          Each pale point is the average for a release date. The darker line
-          follows the median set value each year.
+          <span class="caption-key" aria-hidden="true"></span>
+          Both lines show the median price of LEGO set releases; the pale line
+          measures every date with a release, and the darker line takes an
+          annual aggregate.
+        </p>
+        <p id="eu-data-note" class="chart-note" hidden>
+          A relative lack of European price data for pre-2015 sets might prevent
+          meaningful comparisons in that time period.
         </p>
         <p id="data-status" class="data-status" role="alert"></p>
       </section>
+
+      <div class="story-transition">
+        <p class="hero-lead">
+          Well then, good news! By every measure we've got, and across pretty
+          much every theme, it would appear that the general cost of LEGO isn't
+          actually increasing. That, immediately, leads us to another question:
+        </p>
+      </div>
 
       <section
         id="possible-reasons"
@@ -210,7 +219,7 @@
             <p class="eyebrow">
               <span class="eyebrow-line"></span> 02 / POSSIBLE REASONS
             </p>
-            <h2 id="reasons-heading">The numbers are only the beginning.</h2>
+            <h2 id="reasons-heading">Why do we all think it is?</h2>
             <p class="section-lead">
               So, in that case, why do we all think it is? Let's take a look at
               some possible reasons.
@@ -247,8 +256,13 @@
           >
             <span class="question-icon icon-high-cost" aria-hidden="true">
               <svg viewBox="0 0 48 42" focusable="false">
-                <path d="M17 2h14v11H17zM10 14h14v11H10zM24 14h14v11H24zM3 26h14v13H3zM17 26h14v13H17zM31 26h14v13H31z" />
-                <path class="icon-box-seams" d="M24 2v11M17 14v11M31 14v11M10 26v13M24 26v13M38 26v13" />
+                <path
+                  d="M17 2h14v11H17zM10 14h14v11H10zM24 14h14v11H24zM3 26h14v13H3zM17 26h14v13H17zM31 26h14v13H31z"
+                />
+                <path
+                  class="icon-box-seams"
+                  d="M24 2v11M17 14v11M31 14v11M10 26v13M24 26v13M38 26v13"
+                />
               </svg>
             </span>
             <span class="question-kicker">ABOVE £100</span>
@@ -283,8 +297,14 @@
           >
             <span class="question-icon icon-tree" aria-hidden="true">
               <svg viewBox="0 0 48 42" focusable="false">
-                <path d="M24 0l1.5 3.2 3.5.5-2.5 2.5.6 3.5L24 8l-3.1 1.7.6-3.5L19 3.7l3.5-.5z" fill="currentColor" />
-                <path d="M24 10 16 21h4l-9 9h5l-7 8h30l-7-8h5l-9-9h4zM21 37h6v5h-6z" fill="currentColor" />
+                <path
+                  d="M24 0l1.5 3.2 3.5.5-2.5 2.5.6 3.5L24 8l-3.1 1.7.6-3.5L19 3.7l3.5-.5z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M24 10 16 21h4l-9 9h5l-7 8h30l-7-8h5l-9-9h4zM21 37h6v5h-6z"
+                  fill="currentColor"
+                />
               </svg>
             </span>
             <span class="question-kicker">COUNTING DOWN</span>
@@ -330,8 +350,8 @@
             ></div>
             <div class="annual-top-five-section">
               <p>
-                The fact that Star Wars sets appear among the five
-                most expensive sets in most years, meaning those high prices
+                The fact that Star Wars sets appear among the five most
+                expensive sets in most years, meaning those high prices
                 regularly get a lot of attention, also doesn't help.
               </p>
               <div
@@ -354,26 +374,55 @@
               <div>
                 <p class="question-kicker">COUNTING DOWN</p>
                 <h3>What is in an Advent calendar?</h3>
-                <p>See how Advent calendar prices, pieces and minifigures have changed across themes.</p>
+                <p>
+                  See how Advent calendar prices, pieces and minifigures have
+                  changed across themes.
+                </p>
               </div>
-              <label class="advent-calendar-select-label" for="advent-calendar-theme">
+              <label
+                class="advent-calendar-select-label"
+                for="advent-calendar-theme"
+              >
                 Calendar theme
                 <select id="advent-calendar-theme"></select>
               </label>
             </div>
             <p id="advent-calendar-latest" class="advent-calendar-latest"></p>
-            <div id="advent-calendar-metrics" class="advent-calendar-metrics" aria-label="Latest selected calendar values">
-              <div><span>UK price</span><strong id="advent-calendar-price">—</strong></div>
-              <div><span>Pieces</span><strong id="advent-calendar-pieces">—</strong></div>
-              <div><span>Minifigures</span><strong id="advent-calendar-minifigs">—</strong></div>
+            <div
+              id="advent-calendar-metrics"
+              class="advent-calendar-metrics"
+              aria-label="Latest selected calendar values"
+            >
+              <div>
+                <span>UK price</span
+                ><strong id="advent-calendar-price">—</strong>
+              </div>
+              <div>
+                <span>Pieces</span
+                ><strong id="advent-calendar-pieces">—</strong>
+              </div>
+              <div>
+                <span>Minifigures</span
+                ><strong id="advent-calendar-minifigs">—</strong>
+              </div>
             </div>
             <div class="advent-calendar-legend" aria-hidden="true">
               <span><i class="advent-key-price"></i> UK price</span>
               <span><i class="advent-key-pieces"></i> Pieces</span>
               <span><i class="advent-key-minifigs"></i> Minifigures</span>
             </div>
-            <div id="advent-calendar-chart" class="d3-chart" role="img" aria-label="Annual UK price, pieces and minifigures of the selected Advent Calendar theme"></div>
-            <p class="advent-calendar-note">Includes named Advent Calendar titles from 2005 onward, with or without a year at the end; sets titled only “Advent Calendar” are excluded. All themes uses annual per-set averages; an outlined “?” marks an unavailable minifigure count.</p>
+            <div
+              id="advent-calendar-chart"
+              class="d3-chart"
+              role="img"
+              aria-label="Annual UK price, pieces and minifigures of the selected Advent Calendar theme"
+            ></div>
+            <p class="advent-calendar-note">
+              Includes named Advent Calendar titles from 2005 onward, with or
+              without a year at the end; sets titled only “Advent Calendar” are
+              excluded. All themes uses annual per-set averages; an outlined “?”
+              marks an unavailable minifigure count.
+            </p>
           </section>
           <section
             id="top-end-panel"
@@ -424,12 +473,18 @@
               <div>
                 <p class="question-kicker">ABOVE £100</p>
                 <h3>How common are pricier sets?</h3>
-                <p>Each year, how many sets have a UK list price over £100, and what share of sets with a listed UK price do they make up?</p>
+                <p>
+                  Each year, how many sets have a UK list price over £100, and
+                  what share of sets with a listed UK price do they make up?
+                </p>
               </div>
             </div>
             <div class="high-cost-legend" aria-hidden="true">
               <span><i class="legend-high-cost-count"></i> Sets over £100</span>
-              <span><i class="legend-high-cost-share"></i> Share of UK-priced sets</span>
+              <span
+                ><i class="legend-high-cost-share"></i> Share of UK-priced
+                sets</span
+              >
             </div>
             <div
               id="high-cost-chart"
@@ -437,7 +492,11 @@
               role="img"
               aria-label="Annual number of LEGO sets with a listed UK price over £100, and their percentage of sets with a listed UK price that year"
             ></div>
-            <p class="high-cost-note">Sets without a UK price or priced at £0 are excluded entirely. Sets priced exactly £100 remain in the denominator, but are not counted as over £100.</p>
+            <p class="high-cost-note">
+              Sets without a UK price or priced at £0 are excluded entirely.
+              Sets priced exactly £100 remain in the denominator, but are not
+              counted as over £100.
+            </p>
           </section>
         </div>
       </section>
@@ -578,6 +637,6 @@
     </footer>
     <div id="chart-tooltip" class="d3-tooltip" role="status" hidden></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="script.js?v=20261029c"></script>
+    <script src="script.js?v=20261029g"></script>
   </body>
 </html>

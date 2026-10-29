@@ -28,7 +28,7 @@ const pricePerMetrics = {
   ppbm_us: "Pieces per Big Mac (US)",
   ppbm_gb: "Pieces per Big Mac (UK)",
   ppbm_eu: "Pieces per Big Mac (EU)",
-  ppsp: "Pieces per S&P 500",
+  ppsp: "Pieces per unit of the S&P 500",
   ppp: "Pieces per Pound",
   ppd: "Pieces per Dollar",
   ppe: "Pieces per Euro",

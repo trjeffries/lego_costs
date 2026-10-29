@@ -42,7 +42,7 @@
 
 {% docs ppbm_eu %} Pieces per Big Mac (EU) - calculated by dividing the number of pieces by the EU cost of the set in EU Big Macs. {% enddocs %}
 
-{% docs ppsp %} Pieces per S&P 500 - calculated by dividing the number of pieces by the US cost of the set, in terms of the unit cost of the S&P 500 at time of release. {% enddocs %}
+{% docs ppsp %} Pieces per unit of the S&P 500 - calculated by dividing the number of pieces by the US cost of the set, in terms of the unit cost of the S&P 500 at time of release. {% enddocs %}
 
 {% docs ppp %} Pieces per pound - calculated by dividing the number of pieces by the UK cost. {% enddocs %}
 
